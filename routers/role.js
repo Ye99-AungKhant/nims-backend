@@ -24,6 +24,7 @@ router.get("/", async (req, res) => {
     }
   } else {
     const roles = await prisma.role.findMany();
+
     res.status(200).json(roles);
   }
 });

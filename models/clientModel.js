@@ -1,10 +1,9 @@
 import prisma from "../config/prisma.js";
 
-export const createClientService = async (name, address) => {
+export const createClientService = async (body) => {
   const client = await prisma.client.create({
     data: {
-      name,
-      address,
+      ...body,
     },
   });
   return client;
