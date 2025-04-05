@@ -68,11 +68,11 @@ export const getClient = async (req, res) => {
 };
 
 export const getClientWithContact = async (req, res) => {
-  const { id } = req.query;
-  console.log(id);
-
-  const clients = await getClientWithContactService(id);
-  apiResponse(res, 200, "", clients);
+  const { id, pageIndex, pageSize } = req.query;
+  const currentPage = Math.max(Number(pageIndex) || 1, 1);
+  const perPage = Number(pageSize) || 10;
+  const data = await getClientWithContactService(id, currentPage, perPage);
+  apiResponse(res, 200, "", data);
 };
 
 export const deleteClientWithContact = async (req, res) => {

@@ -16,13 +16,13 @@ export const getClientService = async () => {
   return clients;
 };
 
-export const getClientWithContactService = async (id) => {
+export const getClientWithContactService = async (id, currentPage, perPage) => {
   const whereCondition = {};
   if (id) {
     whereCondition.id = Number(id);
   }
 
-  const clients = await prisma.client.findMany({
+  const queryOptions = {
     where: whereCondition,
     select: {
       id: true,
@@ -34,8 +34,23 @@ export const getClientWithContactService = async (id) => {
       postal: true,
       contact_person: { include: { role: true } },
     },
-  });
-  return clients;
+  };
+
+  // Only add pagination if id is not provided
+  if (!id) {
+    queryOptions.skip = (currentPage - 1) * perPage;
+    queryOptions.take = perPage;
+  }
+
+  const clients = await prisma.client.findMany(queryOptions);
+
+  const totalCount = id
+    ? clients.length // only 1 or 0 result
+    : await prisma.client.count();
+
+  const totalPages = id ? 1 : Math.ceil(totalCount / perPage);
+
+  return { clients, totalCount };
 };
 
 export const updateClientService = async (id, body) => {
