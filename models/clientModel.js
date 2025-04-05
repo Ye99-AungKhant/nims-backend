@@ -28,8 +28,27 @@ export const getClientWithContactService = async (id) => {
       id: true,
       name: true,
       address: true,
+      city: true,
+      state: true,
+      country: true,
+      postal: true,
       contact_person: { include: { role: true } },
     },
   });
   return clients;
+};
+
+export const updateClientService = async (id, body) => {
+  const client = await prisma.client.update({
+    where: { id },
+    data: {
+      ...body,
+    },
+  });
+  return client;
+};
+
+export const deleteClientService = async (id) => {
+  await prisma.client.delete({ where: { id } });
+  return;
 };
