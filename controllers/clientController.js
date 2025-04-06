@@ -68,10 +68,16 @@ export const getClient = async (req, res) => {
 };
 
 export const getClientWithContact = async (req, res) => {
-  const { id, pageIndex, pageSize } = req.query;
+  const { id, pageIndex, pageSize, search, criteria } = req.query;
   const currentPage = Math.max(Number(pageIndex) || 1, 1);
   const perPage = Number(pageSize) || 10;
-  const data = await getClientWithContactService(id, currentPage, perPage);
+  const data = await getClientWithContactService(
+    id,
+    currentPage,
+    perPage,
+    search,
+    criteria
+  );
   apiResponse(res, 200, "", data);
 };
 

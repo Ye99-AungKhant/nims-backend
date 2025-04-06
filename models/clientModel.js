@@ -16,10 +16,24 @@ export const getClientService = async () => {
   return clients;
 };
 
-export const getClientWithContactService = async (id, currentPage, perPage) => {
+export const getClientWithContactService = async (
+  id,
+  currentPage,
+  perPage,
+  search,
+  criteria
+) => {
   const whereCondition = {};
   if (id) {
     whereCondition.id = Number(id);
+  }
+
+  if (search || criteria) {
+    whereCondition.name = {
+      contains:
+        search && criteria ? `${search} ${criteria}` : search || criteria,
+      mode: "insensitive", // case-insensitive search
+    };
   }
 
   const queryOptions = {
@@ -37,20 +51,21 @@ export const getClientWithContactService = async (id, currentPage, perPage) => {
   };
 
   // Only add pagination if id is not provided
-  if (!id) {
+  const isParams = id || search || criteria;
+  if (!isParams) {
     queryOptions.skip = (currentPage - 1) * perPage;
     queryOptions.take = perPage;
   }
 
   const clients = await prisma.client.findMany(queryOptions);
 
-  const totalCount = id
+  const totalCount = isParams
     ? clients.length // only 1 or 0 result
     : await prisma.client.count();
 
-  const totalPages = id ? 1 : Math.ceil(totalCount / perPage);
+  const totalPages = isParams ? 1 : Math.ceil(totalCount / perPage);
 
-  return { clients, totalCount };
+  return { clients, totalCount, totalPages };
 };
 
 export const updateClientService = async (id, body) => {
