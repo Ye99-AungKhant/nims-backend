@@ -9,8 +9,19 @@ export const createClientService = async (body) => {
   return client;
 };
 
-export const getClientService = async () => {
+export const getClientService = async (search) => {
+  const whereCondition = {};
+  if (search) {
+    console.log(search);
+
+    whereCondition.name = {
+      contains: search,
+      mode: "insensitive",
+    };
+  }
+
   const clients = await prisma.client.findMany({
+    where: whereCondition,
     select: { id: true, name: true, address: true },
   });
   return clients;

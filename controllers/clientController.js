@@ -63,7 +63,8 @@ export const updateClientWithContact = async (req, res) => {
 };
 
 export const getClient = async (req, res) => {
-  const clients = await getClientService();
+  const { search } = req.query;
+  const clients = await getClientService(search);
   apiResponse(res, 200, "", clients);
 };
 
