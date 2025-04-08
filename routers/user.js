@@ -17,13 +17,17 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/installation-engineer", async (req, res) => {
-  const role = await prisma.role.findFirst({
-    where: { name: "InstallationEngineer" },
-  });
-  const eng = await prisma.user.findMany({
-    where: { role_id: role.id },
-  });
-  res.status(200).json(eng);
+  try {
+    const role = await prisma.role.findFirst({
+      where: { name: "InstallationEngineer" },
+    });
+    const eng = await prisma.user.findMany({
+      where: { role_id: role.id },
+    });
+    res.status(200).json(eng);
+  } catch (error) {
+    res.status(400).json(error);
+  }
 });
 
 export { router as userRouter };

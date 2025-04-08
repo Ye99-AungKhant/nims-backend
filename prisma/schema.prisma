@@ -202,4 +202,5 @@ enum TypeGroup {
   Sensor
   Accessory
   Server
+  Operator
 }
