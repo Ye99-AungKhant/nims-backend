@@ -17,6 +17,7 @@ import { accessoryRouter } from "./routers/accessory.js";
 import { installServerRouter } from "./routers/installServer.js";
 import { userRouter } from "./routers/user.js";
 import { creatFormRouter } from "./routers/createForm.js";
+import { authRouter } from "./routers/auth.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use(
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
+app.use("/login", authRouter);
 app.use("/createForm", creatFormRouter);
 app.use("/user", userRouter);
 app.use("/client", clientRouter);
