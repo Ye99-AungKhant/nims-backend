@@ -20,6 +20,7 @@ import { creatFormRouter } from "./routers/createForm.js";
 import { authRouter } from "./routers/auth.js";
 
 const app = express();
+const apiRouter = express.Router();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -32,22 +33,24 @@ app.use(
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
-app.use("/login", authRouter);
-app.use("/createForm", creatFormRouter);
-app.use("/user", userRouter);
-app.use("/client", clientRouter);
-app.use("/role", roleRouter);
-app.use("/contact-person", contactPersonRouter);
-app.use("/type", typeRouter);
-app.use("/brand", brandRouter);
-app.use("/model", modelRouter);
-app.use("/vehicle", vehicleRouter);
-app.use("/plan", warrantyPlanRouter);
-app.use("/device", gpsDeviceRouter);
-app.use("/sim-card", simCardRouter);
-app.use("/peripheral", peripheralRouter);
-app.use("/accessory", accessoryRouter);
-app.use("/server", installServerRouter);
+apiRouter.use("/login", authRouter);
+apiRouter.use("/createForm", creatFormRouter);
+apiRouter.use("/user", userRouter);
+apiRouter.use("/client", clientRouter);
+apiRouter.use("/role", roleRouter);
+apiRouter.use("/contact-person", contactPersonRouter);
+apiRouter.use("/type", typeRouter);
+apiRouter.use("/brand", brandRouter);
+apiRouter.use("/model", modelRouter);
+apiRouter.use("/vehicle", vehicleRouter);
+apiRouter.use("/plan", warrantyPlanRouter);
+apiRouter.use("/device", gpsDeviceRouter);
+apiRouter.use("/sim-card", simCardRouter);
+apiRouter.use("/peripheral", peripheralRouter);
+apiRouter.use("/accessory", accessoryRouter);
+apiRouter.use("/server", installServerRouter);
+
+app.use("/api", apiRouter);
 
 const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {

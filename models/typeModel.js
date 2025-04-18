@@ -18,3 +18,18 @@ export const getTypeService = async (type_group) => {
 
   return types;
 };
+
+export const updateTypeService = async (id, name) => {
+  const type = await prisma.type.update({
+    where: { id },
+    data: { name },
+  });
+  return type;
+};
+
+export const deleteTypeService = async ({ id }) => {
+  await prisma.type.delete({
+    where: { id },
+  });
+  return;
+};
