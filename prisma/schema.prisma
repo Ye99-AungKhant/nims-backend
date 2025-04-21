@@ -64,6 +64,7 @@ model Vehicle{
     brand_id             Int
     model_id             Int
     year                 Int
+    odometer             String?
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
     client               Client       @relation(fields: [client_id], references: [id])
@@ -86,12 +87,12 @@ model Type{
 
 model Brand{
     id                   Int               @id @default(autoincrement())
-    type_id              Int
+    type_id              Int?
     name                 String
     type_group           TypeGroup
     createdAt            DateTime          @default(now())
     vehicle              Vehicle[]
-    type                 Type   @relation(fields: [type_id], references: [id])
+    type                 Type?   @relation(fields: [type_id], references: [id], onDelete: Cascade)
     model                Model[]
     gps_device           GPSDevice[]
 }
@@ -103,7 +104,7 @@ model Model{
     type_group           TypeGroup
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
-    brand                Brand  @relation(fields: [brand_id], references: [id])
+    brand                Brand  @relation(fields: [brand_id], references: [id], onDelete: Cascade)
 }
 
 model GPSDevice{

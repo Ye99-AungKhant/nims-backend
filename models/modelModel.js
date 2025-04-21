@@ -18,6 +18,22 @@ export const getModelService = async (type_group, brand_id) => {
   }
   const models = await prisma.model.findMany({
     where: whereCondition,
+    include: { brand: true },
   });
   return models;
+};
+
+export const updateModelService = async ({ id, brand_id, name }) => {
+  const model = await prisma.model.update({
+    where: { id },
+    data: { brand_id, name },
+  });
+  return model;
+};
+
+export const deleteModelService = async ({ id }) => {
+  await prisma.model.delete({
+    where: { id },
+  });
+  return;
 };
