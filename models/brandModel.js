@@ -33,9 +33,12 @@ export const getBrandService = async ({ type_id, type_group }) => {
 };
 
 export const updateBrandService = async ({ id, type_id, name }) => {
+  const data = {};
+  if (type_id) data.type_id = type_id;
+  if (name) data.name = name;
   const brand = await prisma.brand.update({
     where: { id },
-    data: { type_id, name },
+    data,
   });
   return brand;
 };

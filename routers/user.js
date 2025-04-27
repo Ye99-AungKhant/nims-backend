@@ -1,5 +1,10 @@
 import express from "express";
 import prisma from "../config/prisma.js";
+import {
+  createInstallEngineer,
+  getInstallEngineer,
+  getUser,
+} from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -16,18 +21,10 @@ router.post("/", async (req, res) => {
   res.json(user);
 });
 
-router.get("/installation-engineer", async (req, res) => {
-  try {
-    const role = await prisma.role.findFirst({
-      where: { name: "InstallationEngineer" },
-    });
-    const eng = await prisma.user.findMany({
-      where: { role_id: role.id },
-    });
-    res.status(200).json(eng);
-  } catch (error) {
-    res.status(400).json(error);
-  }
-});
+router.get("/", getUser);
+
+router.get("/installation-engineer", getInstallEngineer);
+
+router.post("/installation-engineer", createInstallEngineer);
 
 export { router as userRouter };
