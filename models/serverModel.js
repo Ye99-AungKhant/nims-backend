@@ -3,7 +3,7 @@
 export const createServerService = async (
   prisma,
   {
-    domain,
+    domain_id,
     type_id,
     installed_date,
     subscription_plan_id,
@@ -15,7 +15,7 @@ export const createServerService = async (
 ) => {
   const server = await prisma.server.create({
     data: {
-      domain,
+      domain_id,
       type_id,
       installed_date: new Date(installed_date),
       subscription_plan_id,

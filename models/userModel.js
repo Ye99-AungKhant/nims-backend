@@ -29,3 +29,19 @@ export const getUsersService = async ({ role_id = null }) => {
 
   return users;
 };
+
+export const updateUserService = async (id, name) => {
+  const user = await prisma.user.update({
+    where: { id },
+    data: { name },
+  });
+
+  return user;
+};
+
+export const deleteUserService = async ({ id }) => {
+  const user = await prisma.user.delete({
+    where: { id },
+  });
+  return user;
+};

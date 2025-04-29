@@ -2,8 +2,10 @@ import express from "express";
 import prisma from "../config/prisma.js";
 import {
   createInstallEngineer,
+  deleteUser,
   getInstallEngineer,
   getUser,
+  updateUser,
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -26,5 +28,8 @@ router.get("/", getUser);
 router.get("/installation-engineer", getInstallEngineer);
 
 router.post("/installation-engineer", createInstallEngineer);
+
+router.patch("/", updateUser);
+router.delete("/:id", deleteUser);
 
 export { router as userRouter };

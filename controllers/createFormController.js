@@ -4,30 +4,22 @@ import { createAccessoryService } from "../models/accessoryModel.js";
 import { createContactPersonService } from "../models/contactPersonModel.js";
 import { createGpsDeviceService } from "../models/gpsDeviceModel.js";
 import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
+import { getInstalledObjectService } from "../models/installObjectModel.js";
 import { createPeripheralService } from "../models/peripheralModel.js";
 import { createServerService } from "../models/serverModel.js";
 import { createSimCardService } from "../models/simCardModel.js";
 import { createVehicleService } from "../models/vehicleModel.js";
 
-export const createForm = async (req, res) => {
+export const createInstallObject = async (req, res) => {
   const bodyData = req.body;
   const client_id = Number(bodyData.client);
+
+  // return res.json(bodyData);
+  console.log(req.body);
 
   const createFormTransaction = async () => {
     try {
       return await prisma.$transaction(async (prisma) => {
-        await Promise.all(
-          bodyData.contactPerson.map((contact) =>
-            createContactPersonService(prisma, {
-              client_id,
-              name: contact.name,
-              role_id: Number(contact.role),
-              phone: contact.phone,
-              email: contact.email,
-            })
-          )
-        );
-
         const vehicle = await createVehicleService(prisma, {
           client_id,
           plate_number: bodyData.vehiclePlateNo,
@@ -35,6 +27,7 @@ export const createForm = async (req, res) => {
           brand_id: Number(bodyData.vehicleBrand),
           model_id: Number(bodyData.vehicleModel),
           year: Number(bodyData.vehicleYear),
+          odometer: bodyData.vehicleOdometer,
         });
 
         const gpsDevice = await createGpsDeviceService(prisma, {
@@ -46,38 +39,28 @@ export const createForm = async (req, res) => {
           warranty_plan_id: Number(bodyData.warranty),
         });
 
-        if (bodyData.operator) {
-          await createSimCardService(prisma, {
-            device_id: gpsDevice.id,
-            phone_no: bodyData.operator.phone_no,
-            operator: bodyData.operator.operator,
-          });
-        } else {
+        await Promise.all(
+          bodyData.operators.map((sim) =>
+            createSimCardService(prisma, {
+              device_id: gpsDevice.id,
+              phone_no: sim.phone_no,
+              operator: sim.operator,
+            })
+          )
+        );
+
+        if (bodyData.peripheral.length) {
           await Promise.all(
-            bodyData.operators.map((sim) =>
-              createSimCardService(prisma, {
+            bodyData.peripheral.map((peripheralData) =>
+              createPeripheralService(prisma, {
                 device_id: gpsDevice.id,
-                phone_no: sim.phone_no,
-                operator: sim.operator,
+                sensor_type_id: Number(peripheralData.sensor_type_id),
+                qty: Number(peripheralData.qty),
+                detail: peripheralData.detail,
               })
             )
           );
         }
-
-        await Promise.all(
-          bodyData.peripheral.map((peripheralData) =>
-            createPeripheralService(prisma, {
-              device_id: gpsDevice.id,
-              sensor_type_id: Number(peripheralData.sensor_type_id),
-              brand_id: Number(peripheralData.brand_id),
-              model_id: Number(peripheralData.model_id),
-              serial_no: peripheralData.serial_no,
-              qty: Number(peripheralData.qty),
-              warranty_plan_id: Number(peripheralData.warranty_plan_id),
-              warranty_expiry_date: peripheralData.warranty_expiry_date,
-            })
-          )
-        );
 
         await Promise.all(
           bodyData.accessory.map((accessoryData) =>
@@ -90,7 +73,7 @@ export const createForm = async (req, res) => {
         );
 
         const server = await createServerService(prisma, {
-          domain: bodyData.server.domain,
+          domain_id: Number(bodyData.server.domain),
           type_id: Number(bodyData.server.type_id),
           installed_date: bodyData.server.installed_date,
           subscription_plan_id: Number(bodyData.server.subscription_plan_id),
@@ -115,44 +98,27 @@ export const createForm = async (req, res) => {
     }
   };
 
-  console.log(req.body);
   await createFormTransaction();
-  apiResponse(res, 201, "Form created successfully");
+  apiResponse(res, 201, "Object installation created successful.");
 };
 
 export const getInstalled = async (req, res) => {
-  const { filterByExpireDate } = req.query;
+  const { filterByExpireDate, id, pageIndex, pageSize, search } = req.query;
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
+  const currentPage = Math.max(Number(pageIndex) || 1, 1);
+  const perPage = Number(pageSize) || 10;
 
-  const whereCondition = filterByExpireDate
-    ? {
-        device: {
-          some: {
-            server: {
-              some: {
-                expire_date: {
-                  gte: new Date(currentYear, 0, 1), // From Jan 1st of the current year
-                  lt: new Date(currentYear, currentMonth + 1, 1), // Before the current month
-                },
-              },
-            },
-          },
-        },
-      }
-    : {};
+  const installedObjects = await getInstalledObjectService(
+    filterByExpireDate,
+    currentYear,
+    currentMonth,
+    id,
+    currentPage,
+    perPage,
+    search
+  );
 
-  const data = await prisma.vehicle.findMany({
-    include: {
-      client: true,
-      device: {
-        include: {
-          server: true,
-        },
-      },
-    },
-    where: whereCondition,
-  });
-  apiResponse(res, 200, "", data);
+  apiResponse(res, 200, "", installedObjects);
 };

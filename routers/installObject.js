@@ -1,12 +1,12 @@
 import express from "express";
 import {
-  createForm,
+  createInstallObject,
   getInstalled,
 } from "../controllers/createFormController.js";
 
 const router = express.Router();
 
-router.post("/", createForm);
+router.post("/", createInstallObject);
 router.get("/", getInstalled);
 
-export { router as creatFormRouter };
+export { router as installObjectRouter };

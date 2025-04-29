@@ -96,6 +96,7 @@ model Brand{
     model                Model[]
     gps_device           GPSDevice[]
     peripheralDetail     PeripheralDetail[]
+    domain               Server[]
 }
 
 model Model{
@@ -179,7 +180,7 @@ model Accessory{
 model Server{
     id                   Int               @id @default(autoincrement())
     type_id              Int
-    domain               String
+    domain_id            Int
     installed_date       DateTime
     subscription_plan_id Int
     expire_date          DateTime
@@ -192,6 +193,7 @@ model Server{
     type                 Type   @relation(fields: [type_id], references: [id])
     installation_engineer InstallationEngineer[]
     warranty_plan        WarrantyPlan  @relation(fields: [subscription_plan_id], references: [id])
+    domain               Brand         @relation(fields: [domain_id], references: [id])
 }
 
 model InstallationEngineer{

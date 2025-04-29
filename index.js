@@ -16,8 +16,8 @@ import { peripheralRouter } from "./routers/peripheral.js";
 import { accessoryRouter } from "./routers/accessory.js";
 import { installServerRouter } from "./routers/installServer.js";
 import { userRouter } from "./routers/user.js";
-import { creatFormRouter } from "./routers/createForm.js";
 import { authRouter } from "./routers/auth.js";
+import { installObjectRouter } from "./routers/installObject.js";
 
 const app = express();
 const apiRouter = express.Router();
@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 apiRouter.use("/login", authRouter);
-apiRouter.use("/createForm", creatFormRouter);
+apiRouter.use("/installObject", installObjectRouter);
 apiRouter.use("/user", userRouter);
 apiRouter.use("/client", clientRouter);
 apiRouter.use("/role", roleRouter);
