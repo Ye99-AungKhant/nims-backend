@@ -10,13 +10,15 @@ datasource db {
 model User{
     id                   Int               @id @default(autoincrement())          
     name                 String
-    role_id              Int
+    role_id              Int?
     phone                String?
     email                String?     
-    password             String?           
+    password             String?  
+    username             String?           @unique
+    canLogin             Boolean           @default(false)
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
-    role                 Role         @relation(fields: [role_id], references: [id])
+    role                 Role?         @relation(fields: [role_id], references: [id])
     installation_engineer InstallationEngineer[]
 }
 
@@ -38,22 +40,13 @@ model ContactPerson{
     id                   Int               @id @default(autoincrement())
     client_id            Int
     name                 String
-    role_id              Int
+    role_id              Int?
     phone                String
     email                String           
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
     client               Client       @relation(fields: [client_id], references: [id])
-    role                 Role         @relation(fields: [role_id], references: [id])
-}
-
-model Role{
-    id                   Int               @id @default(autoincrement())
-    name                 String
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    contact_person       ContactPerson[]
-    user                 User[]
+    role                 Role?         @relation(fields: [role_id], references: [id])
 }
 
 model Vehicle{
@@ -160,7 +153,7 @@ model PeripheralDetail{
     serial_no            String
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
-    peripheral           Peripheral        @relation(fields: [peripheral_id], references: [id])
+    peripheral           Peripheral        @relation(fields: [peripheral_id], references: [id],onDelete: Cascade)
     warranty_plan        WarrantyPlan      @relation(fields: [warranty_plan_id], references: [id])
     brand                Brand             @relation(fields: [brand_id], references: [id])
     model                Model             @relation(fields: [model_id], references: [id])
@@ -187,6 +180,7 @@ model Server{
     invoice_no           String?
     object_base_fee      Int 
     gps_device_id        Int
+    status               StatusGroup       @default(Active)
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
     device               GPSDevice       @relation(fields: [gps_device_id], references: [id])
@@ -214,6 +208,28 @@ model WarrantyPlan{
     gps_device           GPSDevice[]
 }
 
+model Role{
+    id                   Int               @id @default(autoincrement())
+    name                 String            @unique
+    canLogin             Boolean           @default(false)
+    createdAt            DateTime          @default(now())
+    updatedAt            DateTime          @updatedAt
+    contact_person       ContactPerson[]
+    user                 User[]
+     permissions Permission[]
+}
+
+model Permission {
+  id      Int     @id @default(autoincrement())
+  page_name    String  
+  view    Boolean      @default(false)
+  create  Boolean      @default(false)
+  update  Boolean      @default(false)  
+  delete  Boolean      @default(false)
+  roleId    Int
+  role      Role    @relation(fields: [roleId], references: [id])
+}
+
 enum TypeGroup {
   Vehicle
   GPS
@@ -221,4 +237,12 @@ enum TypeGroup {
   Accessory
   Server
   Operator
+}
+
+enum StatusGroup{
+    Active
+    ExpireSoon
+    Renew
+    Expired
+    Inactive
 }

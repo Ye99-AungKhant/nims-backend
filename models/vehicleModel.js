@@ -2,7 +2,7 @@
 
 export const createVehicleService = async (
   prisma,
-  { client_id, plate_number, type_id, brand_id, model_id, year }
+  { client_id, plate_number, type_id, brand_id, model_id, year, odometer }
 ) => {
   const vehicle = await prisma.vehicle.create({
     data: {
@@ -12,6 +12,7 @@ export const createVehicleService = async (
       brand_id,
       model_id,
       year,
+      odometer,
     },
   });
   return vehicle;

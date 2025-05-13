@@ -8,12 +8,12 @@ export const login = async (req, res) => {
     const user = await loginService(username, password);
 
     if (!user) {
-      return apiResponse(res, 401, "Invalid username or password");
+      apiResponse(res, 401, "Invalid username or password");
     }
 
-    return apiResponse(res, 200, "Login successful", user);
+    apiResponse(res, 200, "Login successful", user);
   } catch (error) {
     console.error(error);
-    return apiResponse(res, 500, "Internal server error");
+    apiResponse(res, 500, "Internal server error");
   }
 };

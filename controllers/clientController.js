@@ -22,21 +22,27 @@ export const createClient = async (req, res) => {
 
 export const createClientWithContact = async (req, res) => {
   const { clientData, contactPerson } = req.body;
-  console.log(contactPerson);
 
-  const client = await createClientService(clientData);
+  try {
+    const client = await createClientService(clientData);
 
-  contactPerson.map((person) =>
-    createContactPersonService(prisma, {
-      client_id: client.id,
-      name: person.contactName,
-      role_id: person.role_id,
-      phone: person.phone,
-      email: person.email,
-    })
-  );
+    await Promise.all(
+      contactPerson.map((person) =>
+        createContactPersonService(prisma, {
+          client_id: client.id,
+          name: person.contactName,
+          role_id: person.role_id,
+          phone: person.phone,
+          email: person.email,
+        })
+      )
+    );
 
-  apiResponse(res, 201, "Client created successfully");
+    apiResponse(res, 201, "Client created successfully");
+  } catch (error) {
+    console.error("Error creating client with contacts:", error);
+    apiResponse(res, 500, "Failed to create client with contacts");
+  }
 };
 
 export const updateClientWithContact = async (req, res) => {
@@ -72,6 +78,7 @@ export const getClientWithContact = async (req, res) => {
   const { id, pageIndex, pageSize, search, criteria } = req.query;
   const currentPage = Math.max(Number(pageIndex) || 1, 1);
   const perPage = Number(pageSize) || 10;
+
   const data = await getClientWithContactService(
     id,
     currentPage,

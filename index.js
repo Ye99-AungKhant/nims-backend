@@ -18,6 +18,7 @@ import { installServerRouter } from "./routers/installServer.js";
 import { userRouter } from "./routers/user.js";
 import { authRouter } from "./routers/auth.js";
 import { installObjectRouter } from "./routers/installObject.js";
+import { permissionRouter } from "./routers/permission.js";
 
 const app = express();
 const apiRouter = express.Router();
@@ -49,6 +50,7 @@ apiRouter.use("/sim-card", simCardRouter);
 apiRouter.use("/peripheral", peripheralRouter);
 apiRouter.use("/accessory", accessoryRouter);
 apiRouter.use("/server", installServerRouter);
+apiRouter.use("/permission", permissionRouter);
 
 app.use("/api", apiRouter);
 
