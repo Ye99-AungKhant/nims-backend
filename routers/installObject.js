@@ -5,11 +5,16 @@ import {
   updateInstallObject,
   updateInstallObjectStatus,
 } from "../controllers/createFormController.js";
+import { fileUploader } from "../util/fileUpload.js";
 
 const router = express.Router();
 
-router.post("/", createInstallObject);
-router.post("/update", updateInstallObject);
+router.post("/", fileUploader.array("installImage", 30), createInstallObject);
+router.post(
+  "/update",
+  fileUploader.array("installImage", 30),
+  updateInstallObject
+);
 router.get("/", getInstalled);
 router.get("/check-expiry", updateInstallObjectStatus);
 

@@ -2,6 +2,7 @@ import { apiResponse } from "../config/apiResponse.js";
 import {
   createClientService,
   deleteClientService,
+  getClientObjectService,
   getClientService,
   getClientWithContactService,
   updateClientService,
@@ -48,7 +49,6 @@ export const createClientWithContact = async (req, res) => {
 export const updateClientWithContact = async (req, res) => {
   const { id, data } = req.body;
   const { clientData, contactPerson } = data;
-  console.log(contactPerson);
 
   const client = await updateClientService(id, clientData);
 
@@ -87,6 +87,16 @@ export const getClientWithContact = async (req, res) => {
     criteria
   );
   apiResponse(res, 200, "", data);
+};
+
+export const getClientObjects = async (req, res) => {
+  try {
+    const { id } = req.query;
+    const data = await getClientObjectService(Number(id));
+    apiResponse(res, 200, "", data);
+  } catch (error) {
+    apiResponse(res, 400, "This client have not installed objects", error);
+  }
 };
 
 export const deleteClientWithContact = async (req, res) => {

@@ -2,10 +2,10 @@
 
 export const createInstallationEngineerService = async (
   prisma,
-  { user_id, server_id }
+  { user_id, server_id, device_repair_replacement_id }
 ) => {
   const eng = await prisma.installationEngineer.create({
-    data: { user_id, server_id },
+    data: { user_id, server_id, device_repair_replacement_id },
   });
   return eng;
 };

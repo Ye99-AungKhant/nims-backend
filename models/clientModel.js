@@ -89,6 +89,51 @@ export const updateClientService = async (id, body) => {
   return client;
 };
 
+export const getClientObjectService = async (id) => {
+  const totalObjects = await prisma.vehicle.count({
+    where: { client_id: id },
+  });
+
+  const totalVehicles = await prisma.vehicle.findMany({
+    where: { client_id: id },
+    select: { id, device: true },
+  });
+  const totalVehiclesData = totalVehicles
+    .map((vehicle) => vehicle.device.map((gpsdevice) => gpsdevice.id))
+    .flatMap((device) => device);
+
+  const totalActiveObjects = await prisma.server.count({
+    where: {
+      status: "Active",
+      gps_device_id: {
+        in: totalVehiclesData,
+      },
+    },
+  });
+  const totalExpireSoonObjects = await prisma.server.count({
+    where: {
+      status: "ExpireSoon",
+      gps_device_id: {
+        in: totalVehiclesData,
+      },
+    },
+  });
+  const totalExpiredObjects = await prisma.server.count({
+    where: {
+      status: "Expired",
+      gps_device_id: {
+        in: totalVehiclesData,
+      },
+    },
+  });
+  return {
+    totalObjects,
+    totalActiveObjects,
+    totalExpireSoonObjects,
+    totalExpiredObjects,
+  };
+};
+
 export const deleteClientService = async (id) => {
   await prisma.client.delete({ where: { id } });
   return;

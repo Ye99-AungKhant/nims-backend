@@ -1,0 +1,2 @@
+-- AddForeignKey
+ALTER TABLE "GPSDevice" ADD CONSTRAINT "GPSDevice_model_id_fkey" FOREIGN KEY ("model_id") REFERENCES "Model"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

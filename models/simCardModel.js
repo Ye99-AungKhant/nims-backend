@@ -13,3 +13,17 @@ export const createSimCardService = async (
   });
   return simCard;
 };
+
+export const updateSimCardService = async (
+  prisma,
+  { id, phone_no, operator }
+) => {
+  const simCard = await prisma.simCard.update({
+    where: { id },
+    data: {
+      phone_no,
+      operator,
+    },
+  });
+  return simCard;
+};

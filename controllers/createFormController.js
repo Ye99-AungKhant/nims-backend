@@ -2,6 +2,7 @@ import { apiResponse } from "../config/apiResponse.js";
 import prisma from "../config/prisma.js";
 import { createAccessoryService } from "../models/accessoryModel.js";
 import { createContactPersonService } from "../models/contactPersonModel.js";
+import { createInstallImageService } from "../models/fileModel.js";
 import { createGpsDeviceService } from "../models/gpsDeviceModel.js";
 import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
 import {
@@ -18,24 +19,48 @@ const currentYear = now.getFullYear();
 const currentMonth = now.getMonth() + 1;
 
 export const createInstallObject = async (req, res) => {
-  const bodyData = req.body;
+  const bodyData = JSON.parse(req.body.data);
+  const files = req.files;
   const client_id = Number(bodyData.client);
 
-  // return res.json(bodyData);
-  // console.log(req.body);
+  const buildVehicleData = {
+    client_id,
+    plate_number: bodyData.vehiclePlateNo,
+  };
+
+  if (bodyData.vehicleType) {
+    buildVehicleData.type_id = Number(bodyData.vehicleType);
+  }
+
+  if (bodyData.vehicleBrand) {
+    buildVehicleData.brand_id = Number(bodyData.vehicleBrand);
+  }
+
+  if (bodyData.vehicleModel) {
+    buildVehicleData.model_id = Number(bodyData.vehicleModel);
+  }
+
+  if (bodyData.vehicleYear) {
+    buildVehicleData.year = Number(bodyData.vehicleYear);
+  }
+
+  if (bodyData.vehicleOdometer) {
+    buildVehicleData.odometer = bodyData.vehicleOdometer;
+  }
 
   const createFormTransaction = async () => {
     try {
-      return await prisma.$transaction(async (prisma) => {
-        const vehicle = await createVehicleService(prisma, {
-          client_id,
-          plate_number: bodyData.vehiclePlateNo,
-          type_id: Number(bodyData.vehicleType),
-          brand_id: Number(bodyData.vehicleBrand),
-          model_id: Number(bodyData.vehicleModel),
-          year: Number(bodyData.vehicleYear),
-          odometer: bodyData.vehicleOdometer,
-        });
+      await prisma.$transaction(async (prisma) => {
+        // const vehicle = await createVehicleService(prisma, {
+        //   client_id,
+        //   plate_number: bodyData.vehiclePlateNo,
+        //   type_id: Number(bodyData.vehicleType),
+        //   brand_id: Number(bodyData.vehicleBrand),
+        //   model_id: Number(bodyData.vehicleModel),
+        //   year: Number(bodyData.vehicleYear),
+        //   odometer: bodyData.vehicleOdometer,
+        // });
+        const vehicle = await createVehicleService(prisma, buildVehicleData);
 
         const gpsDevice = await createGpsDeviceService(prisma, {
           vehicle_id: vehicle.id,
@@ -98,19 +123,31 @@ export const createInstallObject = async (req, res) => {
             })
           )
         );
+
+        // Save installImage
+        if (files.length) {
+          const imageRecords = files.map((file) => ({
+            server_id: server.id,
+            image_url: `/uploads/${file.filename}`,
+          }));
+
+          await createInstallImageService(prisma, imageRecords);
+        }
       });
+      apiResponse(res, 201, "Object installation created successful.");
     } catch (error) {
-      console.error("Error creating vehicle and GPS device:", error);
+      console.error("Error:", error);
       apiResponse(res, 400, "Form created failed", error);
     }
   };
 
   await createFormTransaction();
-  apiResponse(res, 201, "Object installation created successful.");
+  // apiResponse(res, 201, "Object installation created successful.");
 };
 
 export const updateInstallObject = async (req, res) => {
-  const bodyData = req.body;
+  const bodyData = JSON.parse(req.body.data);
+  const files = req.files;
   const client_id = Number(bodyData.client);
   const vehicle_id = bodyData.vehicleId;
   const gps_id = bodyData.gpsId; // assuming you're passing this
@@ -123,16 +160,22 @@ export const updateInstallObject = async (req, res) => {
     try {
       await prisma.$transaction(async (prisma) => {
         // Update vehicle
-        const vehicle = await prisma.vehicle.update({
+        await prisma.vehicle.update({
           where: { id: vehicle_id },
           data: {
             client_id,
             plate_number: bodyData.vehiclePlateNo,
-            type_id: Number(bodyData.vehicleType),
-            brand_id: Number(bodyData.vehicleBrand),
-            model_id: Number(bodyData.vehicleModel),
-            year: Number(bodyData.vehicleYear),
-            odometer: bodyData.vehicleOdometer,
+            type_id: bodyData.vehicleType ? Number(bodyData.vehicleType) : null,
+            brand_id: bodyData.vehicleBrand
+              ? Number(bodyData.vehicleBrand)
+              : null,
+            model_id: bodyData.vehicleModel
+              ? Number(bodyData.vehicleModel)
+              : null,
+            year: bodyData.vehicleYear ? Number(bodyData.vehicleYear) : null,
+            odometer: bodyData.vehicleOdometer
+              ? bodyData.vehicleOdometer
+              : null,
           },
         });
 
@@ -225,6 +268,15 @@ export const updateInstallObject = async (req, res) => {
             })
           )
         );
+
+        if (files.length) {
+          const imageRecords = files.map((file) => ({
+            server_id: server.id,
+            image_url: `/uploads/${file.filename}`,
+          }));
+
+          await createInstallImageService(prisma, imageRecords);
+        }
       });
 
       apiResponse(res, 200, "Object installation updated successfully.");
@@ -244,9 +296,11 @@ export const getInstalled = async (req, res) => {
     pageIndex,
     pageSize,
     search,
+    filter_by_date,
     filter_by,
     fromDate,
     toDate,
+    client_id,
   } = req.query;
 
   const currentPage = Math.max(Number(pageIndex) || 1, 1);
@@ -260,9 +314,11 @@ export const getInstalled = async (req, res) => {
     currentPage,
     perPage,
     search,
+    filter_by_date,
     filter_by,
     fromDate,
-    toDate
+    toDate,
+    client_id
   );
 
   apiResponse(res, 200, "", installedObjects);

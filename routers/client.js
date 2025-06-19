@@ -5,6 +5,7 @@ import {
   createClientWithContact,
   deleteClientWithContact,
   getClient,
+  getClientObjects,
   getClientWithContact,
   updateClientWithContact,
 } from "../controllers/clientController.js";
@@ -16,6 +17,7 @@ router.post("/createClientWithContact", createClientWithContact);
 
 router.get("/", getClient);
 router.get("/contact-person", getClientWithContact);
+router.get("/object", getClientObjects);
 router.post("/update", updateClientWithContact);
 router.delete("/delete/:id", deleteClientWithContact);
 

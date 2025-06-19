@@ -12,8 +12,10 @@ export const userCreateService = async ({
       role_id,
       phone,
       email,
+      canLogin: false,
     },
   });
+
   return user;
 };
 

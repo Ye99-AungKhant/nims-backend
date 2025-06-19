@@ -19,6 +19,9 @@ import { userRouter } from "./routers/user.js";
 import { authRouter } from "./routers/auth.js";
 import { installObjectRouter } from "./routers/installObject.js";
 import { permissionRouter } from "./routers/permission.js";
+import { dashboardRouter } from "./routers/dashboard.js";
+import { installImageRouter } from "./routers/installImage.js";
+import { repairReplacementRouter } from "./routers/repairReplacement.js";
 
 const app = express();
 const apiRouter = express.Router();
@@ -30,10 +33,12 @@ app.use(
     extended: true,
   })
 );
+app.use("/uploads", express.static("public/uploads"));
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
+apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/login", authRouter);
 apiRouter.use("/installObject", installObjectRouter);
 apiRouter.use("/user", userRouter);
@@ -51,6 +56,8 @@ apiRouter.use("/peripheral", peripheralRouter);
 apiRouter.use("/accessory", accessoryRouter);
 apiRouter.use("/server", installServerRouter);
 apiRouter.use("/permission", permissionRouter);
+apiRouter.use("/installImage", installImageRouter);
+apiRouter.use("/repair-replacement", repairReplacementRouter);
 
 app.use("/api", apiRouter);
 

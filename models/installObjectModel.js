@@ -8,37 +8,40 @@ export const getInstalledObjectService = async (
   currentPage,
   perPage,
   search,
+  filter_by_date,
   filter_by,
   fromDate,
-  toDate
+  toDate,
+  client_id
 ) => {
-  const whereCondition = {};
+  let whereCondition = {};
   let includeData = {
     client: { include: { contact_person: true } },
     device: {
       include: {
         server: { include: { domain: true } },
       },
+      orderBy: { createdAt: "asc" },
     },
   };
 
-  if (filterByExpireDate) {
-    whereCondition.device = {
-      some: {
-        server: {
-          some: {
-            expire_date: {
-              gte: new Date(currentYear, 0, 1),
-              lt: new Date(currentYear, currentMonth + 1, 1),
-            },
-          },
-        },
-      },
-    };
-  }
+  // if (filterByExpireDate) {
+  //   whereCondition.device = {
+  //     some: {
+  //       server: {
+  //         some: {
+  //           expire_date: {
+  //             gte: new Date(currentYear, 0, 1),
+  //             lt: new Date(currentYear, currentMonth + 1, 1),
+  //           },
+  //         },
+  //       },
+  //     },
+  //   };
+  // }
 
-  // Apply date range filter based on filter_by
-  if (filter_by && fromDate) {
+  // Apply date range filter based on filter_by_date
+  if (filter_by_date && fromDate) {
     const dateFilter = {
       gte: new Date(fromDate),
       ...(toDate && { lte: new Date(toDate) }),
@@ -48,24 +51,27 @@ export const getInstalledObjectService = async (
     if (!whereCondition.device.some.server)
       whereCondition.device.some.server = { some: {} };
 
-    if (filter_by === "installed_date") {
+    if (filter_by_date === "installed_date") {
       whereCondition.device.some.server.some.installed_date = dateFilter;
-    } else if (filter_by === "expire_date") {
+    } else if (filter_by_date === "expire_date") {
       whereCondition.device.some.server.some.expire_date = dateFilter;
     }
   }
 
   if (id) {
     whereCondition.id = Number(id);
+
     includeData = {
       type: true,
-      brand: { include: { model: true } },
+      brand: true,
+      model: true,
       client: { include: { contact_person: { include: { role: true } } } },
       device: {
         include: {
-          brand: { include: { model: true } },
+          brand: true,
+          model: true,
           warranty_plan: true,
-          simcard: true,
+          simcard: { where: { status: "Active" } },
           peripheral: {
             include: {
               type: true,
@@ -81,9 +87,18 @@ export const getInstalledObjectService = async (
               domain: true,
               warranty_plan: true,
               installation_engineer: true,
+              server_activity: {
+                include: {
+                  type: true,
+                  domain: true,
+                  warranty_plan: true,
+                },
+              },
+              install_image: true,
             },
           },
         },
+        orderBy: { createdAt: "asc" },
       },
     };
   }
@@ -121,6 +136,48 @@ export const getInstalledObjectService = async (
     ];
   }
 
+  if (filter_by) {
+    whereCondition.device = {
+      some: {
+        server: {
+          some: {
+            status: filter_by,
+          },
+        },
+      },
+    };
+  }
+
+  if (client_id) {
+    const totalVehicles = await prisma.vehicle.findMany({
+      where: { client_id: Number(client_id) },
+      select: {
+        id: true,
+        device: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+    const totalVehiclesData = totalVehicles
+      .map((vehicle) => vehicle.device.map((gpsdevice) => gpsdevice.id))
+      .flatMap((device) => device);
+
+    whereCondition.device = {
+      some: {
+        server: {
+          some: {
+            status: filter_by,
+            gps_device_id: {
+              in: totalVehiclesData,
+            },
+          },
+        },
+      },
+    };
+  }
+
   const queryOptions = {
     where: whereCondition,
     include: includeData,
@@ -132,82 +189,107 @@ export const getInstalledObjectService = async (
     queryOptions.take = perPage;
   }
 
-  const data = await prisma.vehicle.findMany(queryOptions);
+  let data = await prisma.vehicle.findMany(queryOptions);
 
   const totalCount = isParams
     ? data.length // only 1 or 0 result
-    : await prisma.vehicle.count();
+    : await prisma.vehicle.count({ where: whereCondition });
 
   const totalPages = isParams ? 1 : Math.ceil(totalCount / perPage);
 
-  await updateInstallObjectStatusService(currentYear, currentMonth);
+  if (id) {
+    const photos = data[0].device.flatMap(
+      (gpsDevice) => gpsDevice.server?.[0]?.install_image ?? []
+    );
+
+    const grouped = photos.reduce(
+      (acc, photo) => {
+        const type = photo.type?.toLowerCase();
+        if (type === "installed") {
+          acc.installed.push(photo);
+        } else if (type === "replacement") {
+          acc.replacement.push(photo);
+        } else if (type === "repair") {
+          acc.repair.push(photo);
+        }
+        return acc;
+      },
+      { repair: [], replacement: [], installed: [] } // default group structure
+    );
+
+    data[0].install_image = grouped;
+  }
+
+  if (!id) {
+    const transformedData = data.map((item) => {
+      let deviceImei = null;
+
+      for (const device of item.device) {
+        if (device.status === "Active") {
+          deviceImei = device.imei;
+          break;
+        }
+      }
+
+      return {
+        ...item,
+        device_imei: deviceImei,
+      };
+    });
+
+    data = transformedData;
+  }
+
+  await updateInstallObjectStatusService();
+  // console.log(data);
 
   return { data, totalCount, totalPages };
 };
 
-// export const updateInstallObjectStatusService = async (
-//   currentYear,
-//   currentMonth
-// ) => {
-//   const data = await prisma.server.findMany({
-//     where: {
-//       expire_date: {
-//         gte: new Date(currentYear, 0, 1), // Jan 1st of current year
-//         lt: new Date(currentYear, currentMonth + 1, 1), // Before next month
-//       },
-//     },
-//   });
-
-//   if (data.length === 0) return;
-
-//   const ids = data.map((item) => item.id);
-
-//   // Bulk update status to "Expired"
-//   await prisma.server.updateMany({
-//     where: {
-//       id: { in: ids },
-//     },
-//     data: {
-//       status: "ExpireSoon",
-//     },
-//   });
-
-//   return data;
-// };
-
-export const updateInstallObjectStatusService = async (
-  currentYear,
-  currentMonth
-) => {
+export const updateInstallObjectStatusService = async () => {
   const today = new Date();
-  const startOfYear = new Date(currentYear, 0, 1);
-  const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
-  const todayStart = new Date(today.setHours(0, 0, 0, 0));
   const todayEnd = new Date(today.setHours(23, 59, 59, 999));
 
-  // Find servers that expire this year and before next month (ExpireSoon)
-  const expireSoonData = await prisma.server.findMany({
+  const expireSoonEnd = new Date(today);
+  expireSoonEnd.setMonth(expireSoonEnd.getMonth() + 1); // 1 month ahead from today
+
+  // Find Expired: expire_date before today
+  const expiredData = await prisma.server.findMany({
     where: {
       expire_date: {
-        gte: startOfYear,
-        lt: startOfNextMonth,
-      },
-    },
-  });
-
-  // console.log("expireSoonData", expireSoonData);
-
-  // Find servers that expire today (Expired)
-  const expiredTodayData = await prisma.server.findMany({
-    where: {
-      expire_date: {
-        gte: todayStart,
         lte: todayEnd,
       },
     },
   });
 
-  // Bulk update ExpireSoon
+  // Find Expire Soon: between today and one month from today
+  const expireSoonData = await prisma.server.findMany({
+    where: {
+      expire_date: {
+        gt: today,
+        lt: expireSoonEnd,
+      },
+    },
+  });
+
+  const activeData = await prisma.server.findMany({
+    where: {
+      expire_date: {
+        gte: expireSoonEnd,
+      },
+    },
+  });
+
+  // Update Expired
+  if (expiredData.length > 0) {
+    const expiredIds = expiredData.map((item) => item.id);
+    await prisma.server.updateMany({
+      where: { id: { in: expiredIds } },
+      data: { status: "Expired" },
+    });
+  }
+
+  // Update Expire Soon
   if (expireSoonData.length > 0) {
     const expireSoonIds = expireSoonData.map((item) => item.id);
     await prisma.server.updateMany({
@@ -216,17 +298,16 @@ export const updateInstallObjectStatusService = async (
     });
   }
 
-  // Bulk update Expired
-  if (expiredTodayData.length > 0) {
-    const expiredTodayIds = expiredTodayData.map((item) => item.id);
+  if (activeData.length > 0) {
+    const activeIds = activeData.map((item) => item.id);
     await prisma.server.updateMany({
-      where: { id: { in: expiredTodayIds } },
-      data: { status: "Expired" },
+      where: { id: { in: activeIds } },
+      data: { status: "Active" },
     });
   }
 
   return {
+    expiredData,
     expireSoon: expireSoonData,
-    expiredToday: expiredTodayData,
   };
 };

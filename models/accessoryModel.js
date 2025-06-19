@@ -13,3 +13,14 @@ export const createAccessoryService = async (
   });
   return accessory;
 };
+
+export const updateAccessoryService = async (prisma, { id, type_id, qty }) => {
+  const accessory = await prisma.accessory.update({
+    where: { id },
+    data: {
+      type_id: Number(type_id),
+      qty: Number(qty),
+    },
+  });
+  return accessory;
+};

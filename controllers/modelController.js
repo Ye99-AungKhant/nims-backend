@@ -14,9 +14,12 @@ export const createModel = async (req, res) => {
 
 export const getModel = async (req, res) => {
   const { type_group, brand_id } = req.query;
-  const models = await getModelService(type_group, brand_id);
-
-  apiResponse(res, 200, "", models);
+  try {
+    const models = await getModelService(type_group, brand_id);
+    apiResponse(res, 200, "", models);
+  } catch (error) {
+    apiResponse(res, 400, "model not found", error);
+  }
 };
 
 export const updateModel = async (req, res) => {

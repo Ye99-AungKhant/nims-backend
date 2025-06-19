@@ -16,3 +16,20 @@ export const createGpsDeviceService = async (
   });
   return gpsDevice;
 };
+
+export const updateGPSDeviceService = async (
+  prisma,
+  { id, brand_id, model_id, imei, serial_no, warranty_plan_id }
+) => {
+  const gpsDevice = await prisma.gPSDevice.update({
+    where: { id },
+    data: {
+      brand_id,
+      model_id,
+      imei,
+      serial_no,
+      warranty_plan_id,
+    },
+  });
+  return gpsDevice;
+};

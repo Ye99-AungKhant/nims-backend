@@ -1,0 +1,36 @@
+ device: {
+        where: { status: "Active" },
+        include: {
+          brand: true,
+          model: true,
+          warranty_plan: true,
+          simcard: { where: { status: "Active" } },
+          peripheral: {
+            where: { status: "Active" },
+            include: {
+              type: true,
+              peripheralDetail: {
+                include: { brand: true, model: true, warranty_plan: true },
+              },
+            },
+          },
+          accessory: { where: { status: "Active" }, include: { type: true } },
+          server: {
+            include: {
+              type: true,
+              domain: true,
+              warranty_plan: true,
+              installation_engineer: true,
+              server_activity: {
+                include: {
+                  type: true,
+                  domain: true,
+                  warranty_plan: true,
+                },
+              },
+              install_image: true,
+            },
+          },
+          replaced_by: true,
+        },
+      },
