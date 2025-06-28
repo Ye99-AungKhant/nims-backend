@@ -78,11 +78,14 @@ model VehicleActivity{
     year                 Int?
     odometer             String?
     changed_date         DateTime          @default(now())
+    reason               String?
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
      type                 Type?   @relation(fields: [type_id], references: [id])
     brand                Brand?  @relation(fields: [brand_id], references: [id])
     model                Model?  @relation(fields: [model_id], references: [id])
+    changed_by          InstallationEngineer[]
+    changed_image       InstallImage[]
 }
 
 model Type{
@@ -214,6 +217,7 @@ model Server{
     type_id              Int
     domain_id            Int
     installed_date       DateTime
+    renewal_date         DateTime?
     subscription_plan_id Int
     expire_date          DateTime
     invoice_no           String?
@@ -255,20 +259,24 @@ model InstallationEngineer{
     user_id              Int
     server_id            Int?
     device_repair_replacement_id Int?
+    vehicle_activity_id Int?
     createdAt            DateTime          @default(now())
     server               Server?      @relation(fields: [server_id], references: [id])
     user                 User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
     device_repair_replacement       DeviceRepairReplacement?       @relation(fields: [device_repair_replacement_id], references: [id])
+    vehicle_activity     VehicleActivity? @relation(fields: [vehicle_activity_id], references: [id])
 }
 
 model InstallImage{
     id                   Int               @id @default(autoincrement())
     server_id            Int
     device_repair_replacement_id Int?
+    vehicle_activity_id Int?
     type                 RepairReplacementType? @default(Installed)
     image_url            String
     server               Server       @relation(fields: [server_id], references: [id])
     device_repair_replacement       DeviceRepairReplacement?       @relation(fields: [device_repair_replacement_id], references: [id])
+    vehicle_activity     VehicleActivity? @relation(fields: [vehicle_activity_id], references: [id])
 }
 
 model WarrantyPlan{
@@ -386,4 +394,5 @@ enum RepairReplacementType {
     Installed
     Repair
     Replacement
+    VehicleChange
 }

@@ -50,6 +50,21 @@ export const getDashboardDataService = async (filterYear) => {
     },
   });
 
+  // Fetch repair and replacement data
+  const deviceRepairs = await prisma.deviceRepairReplacement.findMany({
+    where: {
+      repair_replacement_date: {
+        gte: startDate,
+        lte: endDate,
+      },
+      type: { in: ["Repair", "Replacement"] },
+    },
+    select: {
+      repair_replacement_date: true,
+      type: true,
+    },
+  });
+
   const monthlyStats = {};
   //   console.log(servers);
 
@@ -60,21 +75,25 @@ export const getDashboardDataService = async (filterYear) => {
     // Count installed
     if (dayjs(server.installed_date).year() === year) {
       monthlyStats[installMonth] ??= {
-        InstallObject: 0,
-        ExpiredObject: 0,
-        RenewalObject: 0,
+        Installed: 0,
+        Expired: 0,
+        Renewal: 0,
+        Repair: 0,
+        Replacement: 0,
       };
-      monthlyStats[installMonth].InstallObject++;
+      monthlyStats[installMonth].Installed++;
     }
 
     // Count expired
     if (dayjs(server.expire_date).year() === year) {
       monthlyStats[expireMonth] ??= {
-        InstallObject: 0,
-        ExpiredObject: 0,
-        RenewalObject: 0,
+        Installed: 0,
+        Expired: 0,
+        Renewal: 0,
+        Repair: 0,
+        Replacement: 0,
       };
-      monthlyStats[expireMonth].ExpiredObject++;
+      monthlyStats[expireMonth].Expired++;
     }
 
     // Count renewals
@@ -85,12 +104,31 @@ export const getDashboardDataService = async (filterYear) => {
       ) {
         const renewalMonth = dayjs(activity.renewal_date).format("MMM YYYY");
         monthlyStats[renewalMonth] ??= {
-          InstallObject: 0,
-          ExpiredObject: 0,
-          RenewalObject: 0,
+          Installed: 0,
+          Expired: 0,
+          Renewal: 0,
+          Repair: 0,
+          Replacement: 0,
         };
-        monthlyStats[renewalMonth].RenewalObject++;
+        monthlyStats[renewalMonth].Renewal++;
       }
+    }
+  }
+
+  // Add repair and replacement stats
+  for (const record of deviceRepairs) {
+    const month = dayjs(record.repair_replacement_date).format("MMM YYYY");
+    monthlyStats[month] ??= {
+      Installed: 0,
+      Expired: 0,
+      Renewal: 0,
+      Repair: 0,
+      Replacement: 0,
+    };
+    if (record.type === "Repair") {
+      monthlyStats[month].Repair++;
+    } else if (record.type === "Replacement") {
+      monthlyStats[month].Replacement++;
     }
   }
 
@@ -104,6 +142,8 @@ export const getDashboardDataService = async (filterYear) => {
     distinct: ["brand_id"],
     select: { brand: true },
   });
+  console.log("Unique Brands:", uniqueBrands);
+
   const brandCount = uniqueBrands.length;
 
   // Count unique models
@@ -129,14 +169,45 @@ export const getDashboardDataService = async (filterYear) => {
     },
   });
 
-  // Step 3: Merge counts with names
-  const usedServer = domainIdCounts.map((countItem) => {
+  const domainMap = new Map();
+
+  domainIdCounts.forEach((countItem) => {
     const domain = domainBrands.find((d) => d.id === countItem.domain_id);
-    return {
-      domain_id: countItem.domain_id,
-      domain_name: domain?.name ?? null,
-      count: countItem._count.domain_id,
-    };
+    const domainName = domain?.name;
+
+    if (!domainName) return;
+
+    if (domainMap.has(domainName)) {
+      domainMap.get(domainName).count += countItem._count.domain_id;
+    } else {
+      domainMap.set(domainName, {
+        domain_id: countItem.domain_id,
+        domain_name: domainName,
+        count: countItem._count.domain_id,
+      });
+    }
+  });
+
+  const usedServer = Array.from(domainMap.values());
+
+  const peripheralType = await prisma.type.count({
+    where: { type_group: "Sensor" },
+  });
+
+  const peripheralBrand = await prisma.brand.count({
+    where: { type_group: "Sensor" },
+  });
+
+  const peripheralModel = await prisma.model.count({
+    where: { type_group: "Sensor" },
+  });
+
+  const accessoryCount = await prisma.type.count({
+    where: { type_group: "Accessory" },
+  });
+
+  const simCardCount = await prisma.brand.count({
+    where: { type_group: "Operator" },
   });
 
   return {
@@ -149,5 +220,196 @@ export const getDashboardDataService = async (filterYear) => {
     brandCount,
     modelCount,
     usedServer,
+    accessoryCount,
+    simCardCount,
+    peripheralCount: {
+      type: peripheralType,
+      brand: peripheralBrand,
+      model: peripheralModel,
+    },
+  };
+};
+
+export const getGPSUsageService = async () => {
+  const gpsBrandUsage = await prisma.brand.findMany({
+    where: {
+      type_group: "GPS",
+    },
+    select: {
+      id: true,
+      name: true,
+      gps_device: {
+        select: {
+          id: true,
+        },
+      },
+      model: {
+        select: {
+          id: true,
+          name: true,
+          gps_device: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const gpsUsageResult = gpsBrandUsage.map((brand) => ({
+    brandId: brand.id,
+    brandName: brand.name,
+    brandUsedCount: brand.gps_device.length,
+    models: brand.model.map((model) => ({
+      modelId: model.id,
+      modelName: model.name,
+      modelUsedCount: model.gps_device.length,
+    })),
+  }));
+
+  // const gpsModelUsage = await prisma.model.findMany({
+  //   where: {
+  //     type_group: "GPS",
+  //   },
+  //   select: {
+  //     id: true,
+  //     name: true,
+  //     gps_device: {
+  //       select: {
+  //         id: true,
+  //       },
+  //     },
+  //   },
+  // });
+  // const gpsModelUsageResult = gpsModelUsage.map((model) => ({
+  //   modelId: model.id,
+  //   modelName: model.name,
+  //   usedCount: model.gps_device.length,
+  // }));
+
+  return {
+    gpsUsage: gpsUsageResult,
+  };
+};
+
+export const getPeripheralUsageService = async () => {
+  const peripheralTypeUsage = await prisma.type.findMany({
+    where: {
+      type_group: "Sensor",
+    },
+    select: {
+      id: true,
+      name: true,
+      peripheral: {
+        where: { status: "Active" },
+        select: {
+          id: true,
+        },
+      },
+      brand: {
+        select: {
+          id: true,
+          name: true,
+          peripheralDetail: {
+            select: {
+              id: true,
+            },
+          },
+          model: {
+            select: {
+              id: true,
+              name: true,
+              peripheralDetail: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const peripheralTypeUsageResult = peripheralTypeUsage.map((type) => ({
+    typeId: type.id,
+    typeName: type.name,
+    typeUsedCount: type.peripheral.length,
+    brands: type.brand.map((brand) => ({
+      brandId: brand.id,
+      brandName: brand.name,
+      brandUsedCount: brand.peripheralDetail.length,
+      models: brand.model.map((model) => ({
+        modelId: model.id,
+        modelName: model.name,
+        modelUsedCount: model.peripheralDetail.length,
+      })),
+    })),
+  }));
+
+  return {
+    peripheralUsage: peripheralTypeUsageResult,
+  };
+};
+
+export const getAccessoryUsageService = async () => {
+  const accessoryTypeUsage = await prisma.type.findMany({
+    where: {
+      type_group: "Accessory",
+    },
+    select: {
+      id: true,
+      name: true,
+      accessory: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  const accessoryTypeUsageResult = accessoryTypeUsage.map((type) => ({
+    typeId: type.id,
+    typeName: type.name,
+    usedCount: type.accessory.length,
+  }));
+
+  return {
+    accessoryTypeUsage: accessoryTypeUsageResult,
+  };
+};
+
+export const getSimCardUsageService = async () => {
+  const simCardBrand = await prisma.brand.findMany({
+    where: {
+      type_group: "Operator",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  const simCards = await prisma.simCard.findMany({
+    select: {
+      id: true,
+      operator: true,
+    },
+  });
+
+  const simCardBrandUsageResult = simCardBrand.map((brand) => {
+    const usedCount = simCards.filter(
+      (sim) => sim.operator === brand.name
+    ).length;
+    return {
+      brandId: brand.id,
+      brandName: brand.name,
+      usedCount,
+    };
+  });
+
+  return {
+    simCardBrandUsage: simCardBrandUsageResult,
   };
 };

@@ -93,6 +93,7 @@ export const renewalServerService = async (
           domain_id: serverOldData.domain_id,
           type_id: serverOldData.type_id,
           installed_date: serverOldData.installed_date,
+          renewal_date: serverOldData.renewal_date,
           expire_date: serverOldData.expire_date,
           subscription_plan_id: serverOldData.subscription_plan_id,
           invoice_no: serverOldData.invoice_no,
@@ -123,6 +124,7 @@ export const renewalServerService = async (
           type_id,
           subscription_plan_id,
           object_base_fee,
+          renewal_date,
           expire_date,
           invoice_no,
           ...(status && { status }),
@@ -130,7 +132,6 @@ export const renewalServerService = async (
       });
     });
   } catch (error) {
-    console.log(error);
     return error;
   }
 };

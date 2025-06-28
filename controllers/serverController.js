@@ -54,8 +54,6 @@ export const renewalServer = async (req, res) => {
     });
     apiResponse(res, 200, "Renewal successfully", renewalData);
   } catch (error) {
-    console.log(error);
-
     apiResponse(res, 400, "Renewal failed", error);
   }
 };

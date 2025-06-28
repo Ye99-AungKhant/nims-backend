@@ -20,6 +20,7 @@ export const getInstalledObjectService = async (
     device: {
       include: {
         server: { include: { domain: true } },
+        simcard: true,
       },
       orderBy: { createdAt: "asc" },
     },
@@ -41,20 +42,49 @@ export const getInstalledObjectService = async (
   // }
 
   // Apply date range filter based on filter_by_date
-  if (filter_by_date && fromDate) {
-    const dateFilter = {
-      gte: new Date(fromDate),
-      ...(toDate && { lte: new Date(toDate) }),
-    };
+  // if (filter_by_date && fromDate) {
+  //   const dateFilter = {
+  //     gte: new Date(fromDate),
+  //     ...(toDate && { lte: new Date(toDate) }),
+  //   };
 
-    if (!whereCondition.device) whereCondition.device = { some: {} };
-    if (!whereCondition.device.some.server)
+  //   if (!whereCondition.device) whereCondition.device = { some: {} };
+  //   if (!whereCondition.device.some.server)
+  //     whereCondition.device.some.server = { some: {} };
+
+  //   if (filter_by_date === "installed_date") {
+  //     whereCondition.device.some.server.some.installed_date = dateFilter;
+  //   } else if (filter_by_date === "expire_date") {
+  //     whereCondition.device.some.server.some.expire_date = dateFilter;
+  //   }
+  // }
+
+  if (filter_by || (filter_by_date && fromDate)) {
+    if (!whereCondition.device) {
+      whereCondition.device = { some: {} };
+    }
+
+    if (!whereCondition.device.some.server) {
       whereCondition.device.some.server = { some: {} };
+    }
 
-    if (filter_by_date === "installed_date") {
-      whereCondition.device.some.server.some.installed_date = dateFilter;
-    } else if (filter_by_date === "expire_date") {
-      whereCondition.device.some.server.some.expire_date = dateFilter;
+    // Apply status filter
+    if (filter_by) {
+      whereCondition.device.some.server.some.status = filter_by;
+    }
+
+    // Apply date range filter
+    if (filter_by_date && fromDate) {
+      const dateFilter = {
+        gte: new Date(fromDate),
+        ...(toDate && { lte: new Date(toDate) }),
+      };
+
+      if (filter_by_date === "installed_date") {
+        whereCondition.device.some.server.some.installed_date = dateFilter;
+      } else if (filter_by_date === "expire_date") {
+        whereCondition.device.some.server.some.expire_date = dateFilter;
+      }
     }
   }
 
@@ -73,6 +103,7 @@ export const getInstalledObjectService = async (
           warranty_plan: true,
           simcard: { where: { status: "Active" } },
           peripheral: {
+            where: { status: "Active" },
             include: {
               type: true,
               peripheralDetail: {
@@ -80,7 +111,7 @@ export const getInstalledObjectService = async (
               },
             },
           },
-          accessory: { include: { type: true } },
+          accessory: { where: { status: "Active" }, include: { type: true } },
           server: {
             include: {
               type: true,
@@ -124,6 +155,18 @@ export const getInstalledObjectService = async (
         },
       },
       {
+        client: {
+          contact_person: {
+            some: {
+              phone: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      },
+      {
         device: {
           some: {
             imei: {
@@ -133,20 +176,42 @@ export const getInstalledObjectService = async (
           },
         },
       },
-    ];
-  }
-
-  if (filter_by) {
-    whereCondition.device = {
-      some: {
-        server: {
-          some: {
-            status: filter_by,
+      {
+        client: {
+          name: {
+            contains: search,
+            mode: "insensitive",
           },
         },
       },
-    };
+      {
+        device: {
+          some: {
+            simcard: {
+              some: {
+                phone_no: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
   }
+
+  // if (filter_by) {
+  //   whereCondition.device = {
+  //     some: {
+  //       server: {
+  //         some: {
+  //           status: filter_by,
+  //         },
+  //       },
+  //     },
+  //   };
+  // }
 
   if (client_id) {
     const totalVehicles = await prisma.vehicle.findMany({

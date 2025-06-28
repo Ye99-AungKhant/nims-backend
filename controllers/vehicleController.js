@@ -1,5 +1,7 @@
 import { apiResponse } from "../config/apiResponse.js";
 import prisma from "../config/prisma.js";
+import { createInstallImageService } from "../models/fileModel.js";
+import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
 import {
   createVehicleService,
   getVehicleActivityService,
@@ -28,11 +30,15 @@ export const getVehicle = async (req, res) => {
 };
 
 export const vehicleChange = async (req, res) => {
-  const bodyData = req.body;
+  console.log("Vehicle Change Request Body:", req.body);
+
+  const bodyData = JSON.parse(req.body.data);
+  const files = req.files;
   const buildVehicleData = {
-    vehicle_id: bodyData.vehicleId,
+    vehicle_id: bodyData.id,
     plate_number: bodyData.vehiclePlateNo,
     changed_date: bodyData.vehicleChangedDate,
+    reason: bodyData.reason ?? null,
   };
 
   if (bodyData.vehicleType) {
@@ -55,12 +61,39 @@ export const vehicleChange = async (req, res) => {
     buildVehicleData.odometer = bodyData.vehicleOdometer;
   }
 
-  const vehicle = await vehicleChangeService(prisma, buildVehicleData);
-  apiResponse(res, 200, "Vehicle updated successfully", vehicle);
+  try {
+    await prisma.$transaction(async (prisma) => {
+      const vehicleData = await vehicleChangeService(prisma, buildVehicleData);
+
+      await Promise.all(
+        bodyData.installationEngineer.map(
+          async (eng) =>
+            await createInstallationEngineerService(prisma, {
+              user_id: Number(eng.user_id),
+              vehicle_activity_id: vehicleData.vehicleActivity.id,
+            })
+        )
+      );
+
+      // Save installImage
+      if (files.length) {
+        const imageRecords = files.map((file) => ({
+          server_id: serverId,
+          vehicle_activity_id: vehicleData.vehicleActivity.id,
+          image_url: `/uploads/${file.filename}`,
+        }));
+
+        await createInstallImageService(prisma, imageRecords);
+      }
+    });
+    apiResponse(res, 200, "Vehicle updated successfully");
+  } catch (error) {
+    apiResponse(res, 400, "Vehicle update failed.", error);
+  }
 };
 
 export const getVehicleActivity = async (req, res) => {
-  const vehicleId = Number(req.query.vehicle_id);
+  const vehicleId = Number(req.query.id);
   const activities = await getVehicleActivityService(prisma, vehicleId);
   apiResponse(res, 200, "", activities);
 };

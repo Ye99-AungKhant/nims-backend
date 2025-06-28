@@ -253,6 +253,8 @@ export const createPlacement = async (req, res) => {
         if (replacementType.includes("Peripheral")) {
           await Promise.all(
             bodyData.peripheral.map(async (peripheralData) => {
+              if (!peripheralData?.is_replacement) return;
+
               const newPeripheral = await createPeripheralService(prisma, {
                 device_id: gpsDeviceId,
                 sensor_type_id: Number(peripheralData.sensor_type_id),
@@ -284,6 +286,8 @@ export const createPlacement = async (req, res) => {
         if (replacementType.includes("Accessories")) {
           await Promise.all(
             bodyData.accessory.map(async (accessoryData) => {
+              if (!accessoryData?.is_replacement) return;
+
               const newAccessory = await createAccessoryService(prisma, {
                 device_id: gpsDeviceId,
                 type_id: Number(accessoryData.type_id),
@@ -438,15 +442,15 @@ export const updateSIMCardReplacement = async (req, res) => {
 };
 
 export const getPeripheralReplacementHistory = async (req, res) => {
-  // try {
-  const history = await getPeripheralReplacementHistoryService(
-    prisma,
-    Number(req.query.gpsDeviceId)
-  );
-  apiResponse(res, 200, "", history);
-  // } catch (error) {
-  //   apiResponse(res, 400, "Get peripheral replacement history failed.", error);
-  // }
+  try {
+    const history = await getPeripheralReplacementHistoryService(
+      prisma,
+      Number(req.query.gpsDeviceId)
+    );
+    apiResponse(res, 200, "", history);
+  } catch (error) {
+    apiResponse(res, 400, "Get peripheral replacement history failed.", error);
+  }
 };
 
 export const updatePeripheralReplacement = async (req, res) => {

@@ -1,5 +1,11 @@
 import { apiResponse } from "../config/apiResponse.js";
-import { getDashboardDataService } from "../models/dashboardModel.js";
+import {
+  getAccessoryUsageService,
+  getDashboardDataService,
+  getGPSUsageService,
+  getPeripheralUsageService,
+  getSimCardUsageService,
+} from "../models/dashboardModel.js";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -8,8 +14,44 @@ export const getDashboardData = async (req, res) => {
     const dashboardData = await getDashboardDataService(filterYear);
     apiResponse(res, 200, "Dashboard data", dashboardData);
   } catch (error) {
+    apiResponse(res, 400, "Dashboard not found", error);
+  }
+};
+
+export const getGPSUsage = async (req, res) => {
+  try {
+    const gpsUsage = await getGPSUsageService();
+    apiResponse(res, 200, "GPS usage data", gpsUsage);
+  } catch (error) {
+    apiResponse(res, 400, "GPS usage data not found", error);
+  }
+};
+
+export const getPeripheralUsage = async (req, res) => {
+  try {
+    const peripheralUsage = await getPeripheralUsageService();
+    apiResponse(res, 200, "Peripheral usage data", peripheralUsage);
+  } catch (error) {
     console.log(error);
 
-    apiResponse(res, 400, "Dashboard not found", error);
+    apiResponse(res, 400, "Peripheral usage data not found", error);
+  }
+};
+
+export const getAccessoryUsage = async (req, res) => {
+  try {
+    const accessoryUsage = await getAccessoryUsageService();
+    apiResponse(res, 200, "Accessory usage data", accessoryUsage);
+  } catch (error) {
+    apiResponse(res, 400, "Accessory usage data not found", error);
+  }
+};
+
+export const getSimCardUsage = async (req, res) => {
+  try {
+    const simCardUsage = await getSimCardUsageService();
+    apiResponse(res, 200, "Sim Card usage data", simCardUsage);
+  } catch (error) {
+    apiResponse(res, 400, "Sim Card usage data not found", error);
   }
 };
