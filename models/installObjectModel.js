@@ -246,9 +246,12 @@ export const getInstalledObjectService = async (
   const queryOptions = {
     where: whereCondition,
     include: includeData,
+    orderBy: {
+      id: "desc", // or 'asc'
+    },
   };
 
-  const isParams = id || search;
+  const isParams = id;
   if (!isParams) {
     queryOptions.skip = (currentPage - 1) * perPage;
     queryOptions.take = perPage;
@@ -270,16 +273,19 @@ export const getInstalledObjectService = async (
     const grouped = photos.reduce(
       (acc, photo) => {
         const type = photo.type?.toLowerCase();
+
         if (type === "installed") {
           acc.installed.push(photo);
         } else if (type === "replacement") {
           acc.replacement.push(photo);
         } else if (type === "repair") {
           acc.repair.push(photo);
+        } else if (type === "vehiclechange") {
+          acc.vehicleChange.push(photo);
         }
         return acc;
       },
-      { repair: [], replacement: [], installed: [] } // default group structure
+      { repair: [], replacement: [], installed: [], vehicleChange: [] } // default group structure
     );
 
     data[0].install_image = grouped;

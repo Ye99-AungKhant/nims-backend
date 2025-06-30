@@ -30,14 +30,15 @@ export const getVehicle = async (req, res) => {
 };
 
 export const vehicleChange = async (req, res) => {
-  console.log("Vehicle Change Request Body:", req.body);
+  console.log(req.files);
 
   const bodyData = JSON.parse(req.body.data);
   const files = req.files;
+  const serverId = bodyData.serverId;
   const buildVehicleData = {
     vehicle_id: bodyData.id,
     plate_number: bodyData.vehiclePlateNo,
-    changed_date: bodyData.vehicleChangedDate,
+    changed_date: bodyData.changeDate,
     reason: bodyData.reason ?? null,
   };
 
@@ -80,6 +81,7 @@ export const vehicleChange = async (req, res) => {
         const imageRecords = files.map((file) => ({
           server_id: serverId,
           vehicle_activity_id: vehicleData.vehicleActivity.id,
+          type: "VehicleChange",
           image_url: `/uploads/${file.filename}`,
         }));
 
@@ -88,6 +90,8 @@ export const vehicleChange = async (req, res) => {
     });
     apiResponse(res, 200, "Vehicle updated successfully");
   } catch (error) {
+    console.log(error);
+
     apiResponse(res, 400, "Vehicle update failed.", error);
   }
 };

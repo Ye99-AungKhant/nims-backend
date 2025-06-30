@@ -116,6 +116,7 @@ model Brand{
     peripheralDetail     PeripheralDetail[]
     domain               ServerActivity[]
     vehicle_activity     VehicleActivity[]
+    extra_gps_device     ExtraGPSDevice[]
 }
 
 model Model{
@@ -130,6 +131,7 @@ model Model{
     brand                Brand  @relation(fields: [brand_id], references: [id], onDelete: Cascade)
     peripheralDetail     PeripheralDetail[]
     vehicle_activity     VehicleActivity[]
+    extra_gps_device     ExtraGPSDevice[]
 }
 
 model GPSDevice{
@@ -153,6 +155,23 @@ model GPSDevice{
     warranty_plan        WarrantyPlan  @relation(fields: [warranty_plan_id], references: [id])
     replacements         DeviceRepairReplacement[] @relation("OriginalDevice")
     replaced_by          DeviceRepairReplacement[] @relation("ReplacementDevice")
+    extra_gps_device     ExtraGPSDevice[]
+}
+
+model ExtraGPSDevice{
+    id                   Int               @id @default(autoincrement())
+    device_id            Int
+    brand_id             Int
+    model_id             Int
+    imei                 String       
+    serial_no            String
+    warranty_plan_id     Int
+    createdAt            DateTime          @default(now())
+    updatedAt            DateTime          @updatedAt
+    device               GPSDevice       @relation(fields: [device_id], references: [id])
+    brand                Brand  @relation(fields: [brand_id], references: [id])
+    model                Model  @relation(fields: [model_id], references: [id])
+    warranty_plan        WarrantyPlan  @relation(fields: [warranty_plan_id], references: [id])
 }
 
 model SimCard{
@@ -173,7 +192,8 @@ model Peripheral{
     device_id            Int
     sensor_type_id       Int
     qty                  Int  
-    status               StatusGroup       @default(Active)       
+    status               StatusGroup       @default(Active)     
+    installed_date       DateTime?  
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
     device               GPSDevice         @relation(fields: [device_id], references: [id])
@@ -204,6 +224,7 @@ model Accessory{
     type_id              Int
     qty                  Int
     status               StatusGroup       @default(Active)
+    installed_date       DateTime?  
     createdAt            DateTime          @default(now())
     updatedAt            DateTime          @updatedAt
     device               GPSDevice       @relation(fields: [device_id], references: [id])
@@ -287,6 +308,7 @@ model WarrantyPlan{
     server                Server[]
     peripheralDetail     PeripheralDetail[]
     gps_device           GPSDevice[]
+    extra_gps_device     ExtraGPSDevice[]
 }
 
 model DeviceRepairReplacement {

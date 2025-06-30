@@ -35,6 +35,13 @@ export const getGPSReplacementHistoryService = async (prisma, deviceId) => {
       brand: true,
       model: true,
       warranty_plan: true,
+      extra_gps_device: {
+        include: {
+          brand: true,
+          model: true,
+          warranty_plan: true,
+        },
+      },
     },
   });
 

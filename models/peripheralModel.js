@@ -2,13 +2,14 @@
 
 export const createPeripheralService = async (
   prisma,
-  { device_id, sensor_type_id, qty, detail }
+  { device_id, sensor_type_id, qty, detail, installed_date }
 ) => {
   const peripheral = await prisma.peripheral.create({
     data: {
       device_id,
       sensor_type_id,
       qty,
+      installed_date: installed_date ? new Date(installed_date) : null, // Handle optional installed_date
       peripheralDetail: {
         create: detail.map((item) => ({
           brand_id: Number(item.brand_id),
@@ -24,13 +25,14 @@ export const createPeripheralService = async (
 
 export const updatePeripheralService = async (
   prisma,
-  { id, sensor_type_id, qty, detail }
+  { id, sensor_type_id, qty, detail, installed_date }
 ) => {
   await prisma.peripheral.update({
     where: { id },
     data: {
       sensor_type_id,
       qty,
+      installed_date: installed_date ? new Date(installed_date) : null, // Handle optional installed_date
     },
   });
 

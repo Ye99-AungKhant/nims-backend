@@ -3,7 +3,10 @@ import prisma from "../config/prisma.js";
 import { createAccessoryService } from "../models/accessoryModel.js";
 import { createContactPersonService } from "../models/contactPersonModel.js";
 import { createInstallImageService } from "../models/fileModel.js";
-import { createGpsDeviceService } from "../models/gpsDeviceModel.js";
+import {
+  createExtraGPSDeviceService,
+  createGpsDeviceService,
+} from "../models/gpsDeviceModel.js";
 import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
 import {
   getInstalledObjectService,
@@ -71,6 +74,21 @@ export const createInstallObject = async (req, res) => {
           warranty_plan_id: Number(bodyData.warranty),
         });
 
+        if (bodyData.extraGPS.length > 0) {
+          await Promise.all(
+            bodyData.extraGPS.map((extraGps) =>
+              createExtraGPSDeviceService(prisma, {
+                device_id: gpsDevice.id,
+                brand_id: Number(extraGps.gpsBrand),
+                model_id: Number(extraGps.gpsModel),
+                imei: extraGps.imei,
+                serial_no: extraGps.gpsSerial,
+                warranty_plan_id: Number(extraGps.warranty),
+              })
+            )
+          );
+        }
+
         await Promise.all(
           bodyData.operators.map((sim) =>
             createSimCardService(prisma, {
@@ -89,6 +107,7 @@ export const createInstallObject = async (req, res) => {
                 sensor_type_id: Number(peripheralData.sensor_type_id),
                 qty: Number(peripheralData.qty),
                 detail: peripheralData.detail,
+                installed_date: peripheralData?.installed_date,
               })
             )
           );
@@ -100,6 +119,7 @@ export const createInstallObject = async (req, res) => {
               device_id: gpsDevice.id,
               type_id: Number(accessoryData.type_id),
               qty: Number(accessoryData.qty),
+              installed_date: accessoryData?.installed_date,
             })
           )
         );
