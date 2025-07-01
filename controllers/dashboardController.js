@@ -3,6 +3,7 @@ import {
   getAccessoryUsageService,
   getDashboardDataService,
   getGPSUsageService,
+  getObjectFeeService,
   getPeripheralUsageService,
   getSimCardUsageService,
 } from "../models/dashboardModel.js";
@@ -53,5 +54,14 @@ export const getSimCardUsage = async (req, res) => {
     apiResponse(res, 200, "Sim Card usage data", simCardUsage);
   } catch (error) {
     apiResponse(res, 400, "Sim Card usage data not found", error);
+  }
+};
+
+export const getObjectFee = async (req, res) => {
+  try {
+    const objectFee = await getObjectFeeService();
+    apiResponse(res, 200, "Object fee data", objectFee);
+  } catch (error) {
+    apiResponse(res, 400, "Object fee data not found", error);
   }
 };

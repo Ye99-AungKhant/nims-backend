@@ -210,6 +210,11 @@ export const getDashboardDataService = async (filterYear) => {
     where: { type_group: "Operator" },
   });
 
+  const totalObjectBaseFees = await prisma.server.aggregate({
+    where: { status: "Active" },
+    _sum: { object_base_fee: true },
+  });
+
   return {
     totalObjects,
     totalActiveObjects,
@@ -227,6 +232,7 @@ export const getDashboardDataService = async (filterYear) => {
       brand: peripheralBrand,
       model: peripheralModel,
     },
+    totalObjectBaseFees: totalObjectBaseFees._sum.object_base_fee || 0,
   };
 };
 
@@ -275,7 +281,7 @@ export const getGPSUsageService = async () => {
   //   select: {
   //     id: true,
   //     name: true,
-  //     gps_device: {
+  //     gPSDevice: {
   //       select: {
   //         id: true,
   //       },
@@ -285,7 +291,7 @@ export const getGPSUsageService = async () => {
   // const gpsModelUsageResult = gpsModelUsage.map((model) => ({
   //   modelId: model.id,
   //   modelName: model.name,
-  //   usedCount: model.gps_device.length,
+  //   usedCount: model.gPSDevice.length,
   // }));
 
   return {
@@ -412,4 +418,60 @@ export const getSimCardUsageService = async () => {
   return {
     simCardBrandUsage: simCardBrandUsageResult,
   };
+};
+
+export const getObjectFeeService = async () => {
+  // Get all clients with their vehicles, each vehicle's GPSDevice, and each GPSDevice's server
+  const clients = await prisma.client.findMany({
+    select: {
+      id: true,
+      name: true,
+      vehicle: {
+        select: {
+          id: true,
+          plate_number: true,
+          device: {
+            select: {
+              id: true,
+              server: {
+                where: { status: "Active" },
+                select: {
+                  object_base_fee: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result = clients.map((client) => {
+    let total_object_base_fee = 0;
+    const objects = [];
+    for (const vehicle of client.vehicle) {
+      // Sum all object_base_fee for all servers of all GPS devices for this vehicle
+      let vehicleFee = 0;
+      for (const gps of vehicle.device) {
+        for (const server of gps.server) {
+          if (typeof server.object_base_fee === "number") {
+            vehicleFee += server.object_base_fee;
+          }
+        }
+      }
+      total_object_base_fee += vehicleFee;
+      objects.push({
+        vehicle_plate_no: vehicle.plate_number,
+        object_base_fee: vehicleFee,
+      });
+    }
+    return {
+      client_id: client.id,
+      client_name: client.name,
+      total_object_base_fee,
+      objects,
+    };
+  });
+
+  return result;
 };
