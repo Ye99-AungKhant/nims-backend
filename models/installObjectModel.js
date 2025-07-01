@@ -26,39 +26,6 @@ export const getInstalledObjectService = async (
     },
   };
 
-  // if (filterByExpireDate) {
-  //   whereCondition.device = {
-  //     some: {
-  //       server: {
-  //         some: {
-  //           expire_date: {
-  //             gte: new Date(currentYear, 0, 1),
-  //             lt: new Date(currentYear, currentMonth + 1, 1),
-  //           },
-  //         },
-  //       },
-  //     },
-  //   };
-  // }
-
-  // Apply date range filter based on filter_by_date
-  // if (filter_by_date && fromDate) {
-  //   const dateFilter = {
-  //     gte: new Date(fromDate),
-  //     ...(toDate && { lte: new Date(toDate) }),
-  //   };
-
-  //   if (!whereCondition.device) whereCondition.device = { some: {} };
-  //   if (!whereCondition.device.some.server)
-  //     whereCondition.device.some.server = { some: {} };
-
-  //   if (filter_by_date === "installed_date") {
-  //     whereCondition.device.some.server.some.installed_date = dateFilter;
-  //   } else if (filter_by_date === "expire_date") {
-  //     whereCondition.device.some.server.some.expire_date = dateFilter;
-  //   }
-  // }
-
   if (filter_by || (filter_by_date && fromDate)) {
     if (!whereCondition.device) {
       whereCondition.device = { some: {} };

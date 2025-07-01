@@ -9,3 +9,14 @@ export const createInstallationEngineerService = async (
   });
   return eng;
 };
+
+export const updateInstallationEngineerService = async (
+  prisma,
+  { id, user_id }
+) => {
+  const eng = await prisma.installationEngineer.update({
+    where: { id },
+    data: { user_id },
+  });
+  return eng;
+};

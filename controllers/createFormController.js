@@ -1,20 +1,32 @@
 import { apiResponse } from "../config/apiResponse.js";
 import prisma from "../config/prisma.js";
-import { createAccessoryService } from "../models/accessoryModel.js";
+import {
+  createAccessoryService,
+  updateAccessoryService,
+} from "../models/accessoryModel.js";
 import { createContactPersonService } from "../models/contactPersonModel.js";
 import { createInstallImageService } from "../models/fileModel.js";
 import {
   createExtraGPSDeviceService,
   createGpsDeviceService,
 } from "../models/gpsDeviceModel.js";
-import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
+import {
+  createInstallationEngineerService,
+  updateInstallationEngineerService,
+} from "../models/installationEngineerModel.js";
 import {
   getInstalledObjectService,
   updateInstallObjectStatusService,
 } from "../models/installObjectModel.js";
-import { createPeripheralService } from "../models/peripheralModel.js";
+import {
+  createPeripheralService,
+  updatePeripheralService,
+} from "../models/peripheralModel.js";
 import { createServerService } from "../models/serverModel.js";
-import { createSimCardService } from "../models/simCardModel.js";
+import {
+  createSimCardService,
+  updateSimCardService,
+} from "../models/simCardModel.js";
 import { createVehicleService } from "../models/vehicleModel.js";
 
 const now = new Date();
@@ -211,51 +223,67 @@ export const updateInstallObject = async (req, res) => {
           },
         });
 
-        // Delete old SIMs, Peripherals, Accessories
-        await prisma.simCard.deleteMany({
-          where: { device_id: gpsDevice.id },
-        });
-        await prisma.peripheral.deleteMany({
-          where: { device_id: gpsDevice.id },
-        });
-        await prisma.accessory.deleteMany({
-          where: { device_id: gpsDevice.id },
-        });
-
-        // Recreate new SIMs
+        // Update new SIMs
         await Promise.all(
-          bodyData.operators.map((sim) =>
-            createSimCardService(prisma, {
-              device_id: gpsDevice.id,
-              phone_no: sim.phone_no,
-              operator: sim.operator,
-            })
-          )
+          bodyData.operators.map((sim) => {
+            if (sim.id) {
+              return updateSimCardService(prisma, {
+                id: sim.id,
+                phone_no: sim.phone_no,
+                operator: sim.operator,
+              });
+            } else {
+              return createSimCardService(prisma, {
+                device_id: gpsDevice.id,
+                phone_no: sim.phone_no,
+                operator: sim.operator,
+              });
+            }
+          })
         );
 
-        // Recreate new Peripherals
+        // Update Peripherals
         if (bodyData.peripheral.length) {
           await Promise.all(
-            bodyData.peripheral.map((peripheralData) =>
-              createPeripheralService(prisma, {
-                device_id: gpsDevice.id,
-                sensor_type_id: Number(peripheralData.sensor_type_id),
-                qty: Number(peripheralData.qty),
-                detail: peripheralData.detail,
-              })
-            )
+            bodyData.peripheral.map((peripheralData) => {
+              if (peripheralData.id) {
+                return updatePeripheralService(prisma, {
+                  id: peripheralData.id,
+                  sensor_type_id: Number(peripheralData.sensor_type_id),
+                  qty: Number(peripheralData.qty),
+                  detail: peripheralData.detail,
+                });
+              } else {
+                return createPeripheralService(prisma, {
+                  device_id: gpsDevice.id,
+                  sensor_type_id: Number(peripheralData.sensor_type_id),
+                  qty: Number(peripheralData.qty),
+                  detail: peripheralData.detail,
+                  installed_date: peripheralData?.installed_date,
+                });
+              }
+            })
           );
         }
 
-        // Recreate new Accessories
+        // Update Accessories
         await Promise.all(
-          bodyData.accessory.map((accessoryData) =>
-            createAccessoryService(prisma, {
-              device_id: gpsDevice.id,
-              type_id: Number(accessoryData.type_id),
-              qty: Number(accessoryData.qty),
-            })
-          )
+          bodyData.accessory.map((accessoryData) => {
+            if (accessoryData.id) {
+              return updateAccessoryService(prisma, {
+                id: accessoryData.id,
+                type_id: Number(accessoryData.type_id),
+                qty: Number(accessoryData.qty),
+              });
+            } else {
+              return createAccessoryService(prisma, {
+                device_id: gpsDevice.id,
+                type_id: Number(accessoryData.type_id),
+                qty: Number(accessoryData.qty),
+                installed_date: accessoryData?.installed_date,
+              });
+            }
+          })
         );
 
         // Update server
@@ -272,21 +300,21 @@ export const updateInstallObject = async (req, res) => {
           },
         });
 
-        // Delete old engineers
-        await prisma.installationEngineer.deleteMany({
-          where: {
-            server_id: server.id,
-          },
-        });
-
-        // Recreate engineers
+        // Update engineers
         await Promise.all(
-          bodyData.installationEngineer.map((eng) =>
-            createInstallationEngineerService(prisma, {
-              user_id: Number(eng.user_id),
-              server_id: server.id,
-            })
-          )
+          bodyData.installationEngineer.map((eng) => {
+            if (eng.id) {
+              return updateInstallationEngineerService(prisma, {
+                id: eng.id,
+                user_id: Number(eng.user_id),
+              });
+            } else {
+              return createInstallationEngineerService(prisma, {
+                user_id: Number(eng.user_id),
+                server_id: server.id,
+              });
+            }
+          })
         );
 
         if (files.length) {
