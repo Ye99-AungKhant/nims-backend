@@ -329,15 +329,25 @@ export const getRepairReplacementFullHistoryService = async (
           },
         },
         orderBy: { id: "asc" },
-      },
+      }
     },
+  });
+
+  const activities = await prisma.vehicleActivity.findMany({
+    where: { vehicle_id: gpsChain.vehicle_id },
+    include: {
+      type: true,
+      brand: true,
+      model: true,
+    },
+    orderBy: { id: "asc" },
   });
 
   // if (gpsChain.status === "Active") {
   //   return { ...gpsChain, replacements: [] };
   // }
 
-  return gpsChain;
+  return {...gpsChain, vehicleChange:activities};
 };
 
 export const deleteRplacementService = async (prisma, id) => {
