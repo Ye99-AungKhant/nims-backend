@@ -339,7 +339,6 @@ export const updateInstallObject = async (req, res) => {
 
 export const getInstalled = async (req, res) => {
   const {
-    filterByExpireDate,
     id,
     pageIndex,
     pageSize,
@@ -355,9 +354,6 @@ export const getInstalled = async (req, res) => {
   const perPage = Number(pageSize) || 10;
 
   const installedObjects = await getInstalledObjectService(
-    filterByExpireDate,
-    currentYear,
-    currentMonth,
     id,
     currentPage,
     perPage,

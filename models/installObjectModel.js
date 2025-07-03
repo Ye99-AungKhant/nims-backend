@@ -1,9 +1,6 @@
 import prisma from "../config/prisma.js";
 
 export const getInstalledObjectService = async (
-  filterByExpireDate = false,
-  currentYear,
-  currentMonth,
   id,
   currentPage,
   perPage,
@@ -20,6 +17,7 @@ export const getInstalledObjectService = async (
     device: {
       include: {
         server: { include: { domain: true } },
+        replacements: true,
         simcard: true,
       },
       orderBy: { createdAt: "asc" },
@@ -51,6 +49,11 @@ export const getInstalledObjectService = async (
         whereCondition.device.some.server.some.installed_date = dateFilter;
       } else if (filter_by_date === "expire_date") {
         whereCondition.device.some.server.some.expire_date = dateFilter;
+      } else if (filter_by_date === "renewal_date") {
+        whereCondition.device.some.server.some.renewal_date = dateFilter;
+      } else if (filter_by_date === "repair_replacement_date") {
+        whereCondition.device.some.replacements.some.repair_replacement_date =
+          dateFilter;
       }
     }
   }
