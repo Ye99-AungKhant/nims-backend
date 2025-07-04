@@ -38,15 +38,27 @@ export const updatePeripheralService = async (
 
   if (detail && detail.length > 0) {
     detail.forEach(async (item) => {
-      await prisma.peripheralDetail.update({
-        where: { id: item.id },
-        data: {
-          brand_id: Number(item.brand_id),
-          model_id: Number(item.model_id),
-          serial_no: item.serial_no,
-          warranty_plan_id: Number(item.warranty_plan_id),
-        },
-      });
+      if (item.id) {
+        await prisma.peripheralDetail.update({
+          where: { id: item.id },
+          data: {
+            brand_id: Number(item.brand_id),
+            model_id: Number(item.model_id),
+            serial_no: item.serial_no,
+            warranty_plan_id: Number(item.warranty_plan_id),
+          },
+        });
+      } else {
+        await prisma.peripheralDetail.create({
+          data: {
+            peripheral_id: id,
+            brand_id: Number(item.brand_id),
+            model_id: Number(item.model_id),
+            serial_no: item.serial_no,
+            warranty_plan_id: Number(item.warranty_plan_id),
+          },
+        });
+      }
     });
   }
 

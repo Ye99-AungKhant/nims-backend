@@ -100,6 +100,7 @@ model Type{
     server_activity      ServerActivity[]
     peripheral           Peripheral[]
     vehicle_activity     VehicleActivity[]
+    extra_server     ExtraServer[]
 }
 
 model Brand{
@@ -117,6 +118,7 @@ model Brand{
     domain               ServerActivity[]
     vehicle_activity     VehicleActivity[]
     extra_gps_device     ExtraGPSDevice[]
+    extra_server         ExtraServer[]
 }
 
 model Model{
@@ -254,6 +256,14 @@ model Server{
     installation_engineer InstallationEngineer[]
     server_activity        ServerActivity[]
     install_image           InstallImage[]
+}
+
+model ExtraServer{
+     id                   Int               @id @default(autoincrement())
+     type_id              Int
+    domain_id            Int
+    type                 Type   @relation(fields: [type_id], references: [id])
+    domain               Brand         @relation(fields: [domain_id], references: [id])
 }
 
 model ServerActivity{
