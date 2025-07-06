@@ -16,7 +16,7 @@ export const getInstalledObjectService = async (
     client: { include: { contact_person: true } },
     device: {
       include: {
-        server: { include: { domain: true } },
+        server: { include: { domain: true, extra_server:true } },
         replacements: true,
         simcard: true,
       },
@@ -88,6 +88,12 @@ export const getInstalledObjectService = async (
               domain: true,
               warranty_plan: true,
               installation_engineer: true,
+              extra_server:{
+                include:{
+                  type: true,
+                  domain: true,
+                }
+              },
               server_activity: {
                 include: {
                   type: true,

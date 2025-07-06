@@ -26,6 +26,7 @@ export const getBrand = async (req, res) => {
     });
     apiResponse(res, 200, "", brands);
   } catch (error) {
+   
     apiResponse(res, 400, "Brand not found.", error);
   }
 };

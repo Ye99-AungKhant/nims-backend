@@ -1,273 +1,278 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
-model User{
-    id                   Int               @id @default(autoincrement())          
-    name                 String
-    role_id              Int?
-    phone                String?
-    email                String?     
-    password             String?  
-    username             String?           @unique
-    canLogin             Boolean           @default(false)
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    role                 Role?         @relation(fields: [role_id], references: [id])
+model User {
+    id                    Int                       @id @default(autoincrement())
+    name                  String
+    role_id               Int?
+    phone                 String?
+    email                 String?
+    password              String?
+    username              String?                   @unique
+    canLogin              Boolean                   @default(false)
+    createdAt             DateTime                  @default(now())
+    updatedAt             DateTime                  @updatedAt
+    role                  Role?                     @relation(fields: [role_id], references: [id])
     installation_engineer InstallationEngineer[]
-    device_replacements  DeviceRepairReplacement[]
+    device_replacements   DeviceRepairReplacement[]
 }
 
-model Client{
-    id                   Int               @id @default(autoincrement())
-    name                 String
-    address              String
-    city                 String?
-    state                String?
-    country              String?
-    postal               String?            
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    contact_person       ContactPerson[]
-    vehicle              Vehicle[]
+model Client {
+    id             Int             @id @default(autoincrement())
+    name           String
+    address        String
+    city           String?
+    state          String?
+    country        String?
+    postal         String?
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+    contact_person ContactPerson[]
+    vehicle        Vehicle[]
 }
 
-model ContactPerson{
-    id                   Int               @id @default(autoincrement())
-    client_id            Int
-    name                 String
-    role_id              Int?
-    phone                String
-    email                String           
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    client               Client       @relation(fields: [client_id], references: [id])
-    role                 Role?         @relation(fields: [role_id], references: [id])
+model ContactPerson {
+    id        Int      @id @default(autoincrement())
+    client_id Int
+    name      String
+    role_id   Int?
+    phone     String
+    email     String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    client    Client   @relation(fields: [client_id], references: [id])
+    role      Role?    @relation(fields: [role_id], references: [id])
 }
 
-model Vehicle{
-    id                   Int               @id @default(autoincrement())
-    client_id            Int
-    plate_number         String
-    type_id              Int?
-    brand_id             Int?
-    model_id             Int?
-    year                 Int?
-    odometer             String?
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    client               Client       @relation(fields: [client_id], references: [id])
-    device               GPSDevice[]
-    type                 Type?   @relation(fields: [type_id], references: [id])
-    brand                Brand?  @relation(fields: [brand_id], references: [id])
-    model                Model?  @relation(fields: [model_id], references: [id])
+model Vehicle {
+    id           Int         @id @default(autoincrement())
+    client_id    Int
+    plate_number String
+    type_id      Int?
+    brand_id     Int?
+    model_id     Int?
+    year         Int?
+    odometer     String?
+    changed_date  DateTime?
+    createdAt    DateTime    @default(now())
+    updatedAt    DateTime    @updatedAt
+    client       Client      @relation(fields: [client_id], references: [id])
+    device       GPSDevice[]
+    type         Type?       @relation(fields: [type_id], references: [id])
+    brand        Brand?      @relation(fields: [brand_id], references: [id])
+    model        Model?      @relation(fields: [model_id], references: [id])
 }
 
-model VehicleActivity{
-    id                   Int               @id @default(autoincrement())
-    vehicle_id           Int
-    plate_number         String
-    type_id              Int?
-    brand_id             Int?
-    model_id             Int?
-    year                 Int?
-    odometer             String?
-    changed_date         DateTime          @default(now())
-    reason               String?
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-     type                 Type?   @relation(fields: [type_id], references: [id])
-    brand                Brand?  @relation(fields: [brand_id], references: [id])
-    model                Model?  @relation(fields: [model_id], references: [id])
-    changed_by          InstallationEngineer[]
-    changed_image       InstallImage[]
+model VehicleActivity {
+    id            Int                    @id @default(autoincrement())
+    vehicle_id    Int
+    plate_number  String
+    type_id       Int?
+    brand_id      Int?
+    model_id      Int?
+    year          Int?
+    odometer      String?
+    changed_date  DateTime               @default(now())
+    reason        String?
+    createdAt     DateTime               @default(now())
+    updatedAt     DateTime               @updatedAt
+    type          Type?                  @relation(fields: [type_id], references: [id])
+    brand         Brand?                 @relation(fields: [brand_id], references: [id])
+    model         Model?                 @relation(fields: [model_id], references: [id])
+    changed_by    InstallationEngineer[]
+    changed_image InstallImage[]
 }
 
-model Type{
-    id                   Int               @id @default(autoincrement())
-    name                 String
-    type_group           TypeGroup
-    createdAt            DateTime          @default(now())
-    brand                Brand[]
-    vehicle              Vehicle[]
-    accessory            Accessory[]
-    server               Server[]
-    server_activity      ServerActivity[]
-    peripheral           Peripheral[]
-    vehicle_activity     VehicleActivity[]
+model Type {
+    id               Int               @id @default(autoincrement())
+    name             String
+    type_group       TypeGroup
+    createdAt        DateTime          @default(now())
+    brand            Brand[]
+    vehicle          Vehicle[]
+    accessory        Accessory[]
+    server           Server[]
+    server_activity  ServerActivity[]
+    peripheral       Peripheral[]
+    vehicle_activity VehicleActivity[]
     extra_server     ExtraServer[]
 }
 
-model Brand{
-    id                   Int               @id @default(autoincrement())
-    type_id              Int?
-    name                 String
-    type_group           TypeGroup
-    createdAt            DateTime          @default(now())
-    vehicle              Vehicle[]
-    type                 Type?   @relation(fields: [type_id], references: [id], onDelete: Cascade)
-    model                Model[]
-    gps_device           GPSDevice[]
-    server               Server[]
-    peripheralDetail     PeripheralDetail[]
-    domain               ServerActivity[]
-    vehicle_activity     VehicleActivity[]
-    extra_gps_device     ExtraGPSDevice[]
-    extra_server         ExtraServer[]
+model Brand {
+    id               Int                @id @default(autoincrement())
+    type_id          Int?
+    name             String
+    type_group       TypeGroup
+    createdAt        DateTime           @default(now())
+    vehicle          Vehicle[]
+    type             Type?              @relation(fields: [type_id], references: [id], onDelete: Cascade)
+    model            Model[]
+    gps_device       GPSDevice[]
+    server           Server[]
+    peripheralDetail PeripheralDetail[]
+    domain           ServerActivity[]
+    vehicle_activity VehicleActivity[]
+    extra_gps_device ExtraGPSDevice[]
+    extra_server     ExtraServer[]
 }
 
-model Model{
-    id                   Int               @id @default(autoincrement())
-    brand_id             Int
-    name                 String
-    type_group           TypeGroup
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    gps_device           GPSDevice[]
-    vehicle              Vehicle[]
-    brand                Brand  @relation(fields: [brand_id], references: [id], onDelete: Cascade)
-    peripheralDetail     PeripheralDetail[]
-    vehicle_activity     VehicleActivity[]
-    extra_gps_device     ExtraGPSDevice[]
+model Model {
+    id               Int                @id @default(autoincrement())
+    brand_id         Int
+    name             String
+    type_group       TypeGroup
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    gps_device       GPSDevice[]
+    vehicle          Vehicle[]
+    brand            Brand              @relation(fields: [brand_id], references: [id], onDelete: Cascade)
+    peripheralDetail PeripheralDetail[]
+    vehicle_activity VehicleActivity[]
+    extra_gps_device ExtraGPSDevice[]
 }
 
-model GPSDevice{
-    id                   Int               @id @default(autoincrement())
-    vehicle_id           Int
-    brand_id             Int
-    model_id             Int
-    imei                 String       
-    serial_no            String
-    warranty_plan_id     Int
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    vehicle              Vehicle       @relation(fields: [vehicle_id], references: [id])
-    status               StatusGroup       @default(Active)
-    simcard              SimCard[]
-    peripheral           Peripheral[]
-    accessory            Accessory[]
-    server               Server[]
-    brand                Brand  @relation(fields: [brand_id], references: [id])
-    model                Model  @relation(fields: [model_id], references: [id])
-    warranty_plan        WarrantyPlan  @relation(fields: [warranty_plan_id], references: [id])
-    replacements         DeviceRepairReplacement[] @relation("OriginalDevice")
-    replaced_by          DeviceRepairReplacement[] @relation("ReplacementDevice")
-    extra_gps_device     ExtraGPSDevice[]
+model GPSDevice {
+    id               Int                       @id @default(autoincrement())
+    vehicle_id       Int
+    brand_id         Int
+    model_id         Int
+    imei             String
+    serial_no        String
+    warranty_plan_id Int
+    createdAt        DateTime                  @default(now())
+    updatedAt        DateTime                  @updatedAt
+    vehicle          Vehicle                   @relation(fields: [vehicle_id], references: [id])
+    status           StatusGroup               @default(Active)
+    simcard          SimCard[]
+    peripheral       Peripheral[]
+    accessory        Accessory[]
+    server           Server[]
+    brand            Brand                     @relation(fields: [brand_id], references: [id])
+    model            Model                     @relation(fields: [model_id], references: [id])
+    warranty_plan    WarrantyPlan              @relation(fields: [warranty_plan_id], references: [id])
+    replacements     DeviceRepairReplacement[] @relation("OriginalDevice")
+    replaced_by      DeviceRepairReplacement[] @relation("ReplacementDevice")
+    extra_gps_device ExtraGPSDevice[]
 }
 
-model ExtraGPSDevice{
-    id                   Int               @id @default(autoincrement())
-    device_id            Int
-    brand_id             Int
-    model_id             Int
-    imei                 String       
-    serial_no            String
-    warranty_plan_id     Int
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    device               GPSDevice       @relation(fields: [device_id], references: [id])
-    brand                Brand  @relation(fields: [brand_id], references: [id])
-    model                Model  @relation(fields: [model_id], references: [id])
-    warranty_plan        WarrantyPlan  @relation(fields: [warranty_plan_id], references: [id])
+model ExtraGPSDevice {
+    id               Int          @id @default(autoincrement())
+    device_id        Int
+    brand_id         Int
+    model_id         Int
+    imei             String
+    serial_no        String
+    warranty_plan_id Int
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
+    device           GPSDevice    @relation(fields: [device_id], references: [id])
+    brand            Brand        @relation(fields: [brand_id], references: [id])
+    model            Model        @relation(fields: [model_id], references: [id])
+    warranty_plan    WarrantyPlan @relation(fields: [warranty_plan_id], references: [id])
 }
 
-model SimCard{
-    id                   Int               @id @default(autoincrement())
-    device_id            Int
-    phone_no             String
-    operator             String
-    status               StatusGroup       @default(Active)
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    device               GPSDevice       @relation(fields: [device_id], references: [id])
-    original_replacements    ComponentReplacement[] @relation("OriginalSimCard")
-    replacement_of           ComponentReplacement[] @relation("ReplacementSimCard")
+model SimCard {
+    id                    Int                    @id @default(autoincrement())
+    device_id             Int
+    phone_no              String
+    operator              String
+    status                StatusGroup            @default(Active)
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt
+    device                GPSDevice              @relation(fields: [device_id], references: [id])
+    original_replacements ComponentReplacement[] @relation("OriginalSimCard")
+    replacement_of        ComponentReplacement[] @relation("ReplacementSimCard")
 }
 
-model Peripheral{
-    id                   Int               @id @default(autoincrement())
-    device_id            Int
-    sensor_type_id       Int
-    qty                  Int  
-    status               StatusGroup       @default(Active)     
-    installed_date       DateTime?  
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    device               GPSDevice         @relation(fields: [device_id], references: [id])
-    type                 Type              @relation(fields: [sensor_type_id], references: [id])
-    peripheralDetail     PeripheralDetail[]
-    original_replacements    ComponentReplacement[] @relation("OriginalPeripheral")
-    replacement_of           ComponentReplacement[] @relation("ReplacementPeripheral")
+model Peripheral {
+    id                    Int                    @id @default(autoincrement())
+    device_id             Int
+    sensor_type_id        Int
+    qty                   Int
+    status                StatusGroup            @default(Active)
+    installed_date        DateTime?
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt
+    device                GPSDevice              @relation(fields: [device_id], references: [id])
+    type                  Type                   @relation(fields: [sensor_type_id], references: [id])
+    peripheralDetail      PeripheralDetail[]
+    original_replacements ComponentReplacement[] @relation("OriginalPeripheral")
+    replacement_of        ComponentReplacement[] @relation("ReplacementPeripheral")
 }
 
-model PeripheralDetail{
-    id                   Int               @id @default(autoincrement())
-    peripheral_id        Int
-    brand_id             Int
-    model_id             Int
-    warranty_plan_id     Int
-    serial_no            String
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    peripheral           Peripheral        @relation(fields: [peripheral_id], references: [id],onDelete: Cascade)
-    warranty_plan        WarrantyPlan      @relation(fields: [warranty_plan_id], references: [id])
-    brand                Brand             @relation(fields: [brand_id], references: [id])
-    model                Model             @relation(fields: [model_id], references: [id])
+model PeripheralDetail {
+    id               Int          @id @default(autoincrement())
+    peripheral_id    Int
+    brand_id         Int
+    model_id         Int
+    warranty_plan_id Int
+    serial_no        String
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
+    peripheral       Peripheral   @relation(fields: [peripheral_id], references: [id], onDelete: Cascade)
+    warranty_plan    WarrantyPlan @relation(fields: [warranty_plan_id], references: [id])
+    brand            Brand        @relation(fields: [brand_id], references: [id])
+    model            Model        @relation(fields: [model_id], references: [id])
 }
 
-model Accessory{
-    id                   Int               @id @default(autoincrement())
-    device_id            Int
-    type_id              Int
-    qty                  Int
-    status               StatusGroup       @default(Active)
-    installed_date       DateTime?  
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    device               GPSDevice       @relation(fields: [device_id], references: [id])
-    type                 Type   @relation(fields: [type_id], references: [id])
-   original_replacements    ComponentReplacement[] @relation("OriginalAccessory")
-    replacement_of           ComponentReplacement[] @relation("ReplacementAccessory")
+model Accessory {
+    id                    Int                    @id @default(autoincrement())
+    device_id             Int
+    type_id               Int
+    qty                   Int
+    status                StatusGroup            @default(Active)
+    installed_date        DateTime?
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt
+    device                GPSDevice              @relation(fields: [device_id], references: [id])
+    type                  Type                   @relation(fields: [type_id], references: [id])
+    original_replacements ComponentReplacement[] @relation("OriginalAccessory")
+    replacement_of        ComponentReplacement[] @relation("ReplacementAccessory")
 }
 
-model Server{
-    id                   Int               @id @default(autoincrement())
-    type_id              Int
-    domain_id            Int
-    installed_date       DateTime
-    renewal_date         DateTime?
-    subscription_plan_id Int
-    expire_date          DateTime
-    invoice_no           String?
-    object_base_fee      Int 
-    gps_device_id        Int
-    status               StatusGroup       @default(Active)
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    device               GPSDevice       @relation(fields: [gps_device_id], references: [id])
-    type                 Type   @relation(fields: [type_id], references: [id])
-    warranty_plan        WarrantyPlan  @relation(fields: [subscription_plan_id], references: [id])
-    domain               Brand         @relation(fields: [domain_id], references: [id])
+model Server {
+    id                    Int                    @id @default(autoincrement())
+    type_id               Int
+    domain_id             Int
+    installed_date        DateTime
+    renewal_date          DateTime?
+    subscription_plan_id  Int
+    expire_date           DateTime
+    invoice_no            String?
+    object_base_fee       Int
+    gps_device_id         Int
+    status                StatusGroup            @default(Active)
+    createdAt             DateTime               @default(now())
+    updatedAt             DateTime               @updatedAt
+    device                GPSDevice              @relation(fields: [gps_device_id], references: [id])
+    type                  Type                   @relation(fields: [type_id], references: [id])
+    warranty_plan         WarrantyPlan           @relation(fields: [subscription_plan_id], references: [id])
+    domain                Brand                  @relation(fields: [domain_id], references: [id])
     installation_engineer InstallationEngineer[]
-    server_activity        ServerActivity[]
-    install_image           InstallImage[]
+    server_activity       ServerActivity[]
+    extra_server          ExtraServer[]
+    install_image         InstallImage[]
 }
 
-model ExtraServer{
-     id                   Int               @id @default(autoincrement())
-     type_id              Int
-    domain_id            Int
-    type                 Type   @relation(fields: [type_id], references: [id])
-    domain               Brand         @relation(fields: [domain_id], references: [id])
+model ExtraServer {
+    id        Int         @id @default(autoincrement())
+    server_id Int
+    type_id   Int
+    domain_id Int
+    status    StatusGroup @default(Active)
+    type      Type        @relation(fields: [type_id], references: [id])
+    domain    Brand       @relation(fields: [domain_id], references: [id])
+    server    Server      @relation(fields: [server_id], references: [id])
 }
 
-model ServerActivity{
-    id                   Int               @id @default(autoincrement())
+model ServerActivity {
+    id                   Int           @id @default(autoincrement())
     server_id            Int
     type_id              Int?
     domain_id            Int?
@@ -276,139 +281,140 @@ model ServerActivity{
     renewal_date         DateTime?
     expire_date          DateTime
     invoice_no           String?
-    object_base_fee      Int 
-    status               StatusGroup       @default(Active)
-    createdAt            DateTime          @default(now())
-    server               Server       @relation(fields: [server_id], references: [id], onDelete: Cascade)
-    type                 Type?   @relation(fields: [type_id], references: [id])
-    warranty_plan        WarrantyPlan?  @relation(fields: [subscription_plan_id], references: [id])
-    domain               Brand?         @relation(fields: [domain_id], references: [id])
+    object_base_fee      Int
+    status               StatusGroup   @default(Active)
+    createdAt            DateTime      @default(now())
+    server               Server        @relation(fields: [server_id], references: [id], onDelete: Cascade)
+    type                 Type?         @relation(fields: [type_id], references: [id])
+    warranty_plan        WarrantyPlan? @relation(fields: [subscription_plan_id], references: [id])
+    domain               Brand?        @relation(fields: [domain_id], references: [id])
 }
 
-model InstallationEngineer{
-    id                   Int               @id @default(autoincrement())
-    user_id              Int
-    server_id            Int?
+model InstallationEngineer {
+    id                           Int                      @id @default(autoincrement())
+    user_id                      Int
+    server_id                    Int?
     device_repair_replacement_id Int?
-    vehicle_activity_id Int?
-    createdAt            DateTime          @default(now())
-    server               Server?      @relation(fields: [server_id], references: [id])
-    user                 User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    device_repair_replacement       DeviceRepairReplacement?       @relation(fields: [device_repair_replacement_id], references: [id])
-    vehicle_activity     VehicleActivity? @relation(fields: [vehicle_activity_id], references: [id])
+    vehicle_activity_id          Int?
+    createdAt                    DateTime                 @default(now())
+    server                       Server?                  @relation(fields: [server_id], references: [id])
+    user                         User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    device_repair_replacement    DeviceRepairReplacement? @relation(fields: [device_repair_replacement_id], references: [id])
+    vehicle_activity             VehicleActivity?         @relation(fields: [vehicle_activity_id], references: [id])
 }
 
-model InstallImage{
-    id                   Int               @id @default(autoincrement())
-    server_id            Int
+model InstallImage {
+    id                           Int                      @id @default(autoincrement())
+    server_id                    Int
     device_repair_replacement_id Int?
-    vehicle_activity_id Int?
-    type                 RepairReplacementType? @default(Installed)
-    image_url            String
-    server               Server       @relation(fields: [server_id], references: [id])
-    device_repair_replacement       DeviceRepairReplacement?       @relation(fields: [device_repair_replacement_id], references: [id])
-    vehicle_activity     VehicleActivity? @relation(fields: [vehicle_activity_id], references: [id])
+    vehicle_activity_id          Int?
+    type                         RepairReplacementType?   @default(Installed)
+    image_url                    String
+    server                       Server                   @relation(fields: [server_id], references: [id])
+    device_repair_replacement    DeviceRepairReplacement? @relation(fields: [device_repair_replacement_id], references: [id])
+    vehicle_activity             VehicleActivity?         @relation(fields: [vehicle_activity_id], references: [id])
 }
 
-model WarrantyPlan{
-    id                   Int               @id @default(autoincrement())
-    name                 String
-    createdAt            DateTime          @default(now())
-    server_activity       ServerActivity[]
-    server                Server[]
-    peripheralDetail     PeripheralDetail[]
-    gps_device           GPSDevice[]
-    extra_gps_device     ExtraGPSDevice[]
+model WarrantyPlan {
+    id               Int                @id @default(autoincrement())
+    name             String
+    createdAt        DateTime           @default(now())
+    server_activity  ServerActivity[]
+    server           Server[]
+    peripheralDetail PeripheralDetail[]
+    gps_device       GPSDevice[]
+    extra_gps_device ExtraGPSDevice[]
 }
 
 model DeviceRepairReplacement {
-    id                             Int               @id @default(autoincrement())
-    original_gps_id                Int
-    repair_replacement_gps_id      Int?        
-    repair_replacement_by_user_id  Int
-    type                           RepairReplacementType
-    replacement_device_type        TypeGroup?
-    reason                         String
-    user_false                     StatusGroup?
-    is_deleted                     Boolean          @default(false)
-    repair_replacement_date       DateTime          @default(now())
-    createdAt                     DateTime          @default(now())
-    updatedAt                     DateTime          @updatedAt
+    id                            Int                   @id @default(autoincrement())
+    original_gps_id               Int
+    repair_replacement_gps_id     Int?
+    repair_replacement_by_user_id Int
+    type                          RepairReplacementType
+    replacement_device_type       TypeGroup?
+    reason                        String
+    user_false                    StatusGroup?
+    invoice_no                    String?
+    is_deleted                    Boolean               @default(false)
+    repair_replacement_date       DateTime              @default(now())
+    createdAt                     DateTime              @default(now())
+    updatedAt                     DateTime              @updatedAt
 
-    original_gps               GPSDevice            @relation("OriginalDevice", fields: [original_gps_id], references: [id])
-    replacement_gps           GPSDevice?           @relation("ReplacementDevice", fields: [repair_replacement_gps_id], references: [id])
-    replaced_by_user              User              @relation(fields: [repair_replacement_by_user_id], references: [id])
-    repair_replacement_image      InstallImage[]
-    install_engineer              InstallationEngineer[]
-    component_replacements        ComponentReplacement[]
+    original_gps             GPSDevice              @relation("OriginalDevice", fields: [original_gps_id], references: [id])
+    replacement_gps          GPSDevice?             @relation("ReplacementDevice", fields: [repair_replacement_gps_id], references: [id])
+    replaced_by_user         User                   @relation(fields: [repair_replacement_by_user_id], references: [id])
+    repair_replacement_image InstallImage[]
+    install_engineer         InstallationEngineer[]
+    component_replacements   ComponentReplacement[]
 }
 
 model ComponentReplacement {
-    id                     Int               @id @default(autoincrement())
-    device_replacement_id  Int
-    component_type         TypeGroup     // Operator, Sensor, Accessory
-    replacement_reason     String?
-    replacement_date       DateTime          @default(now())
-    
+    id                    Int       @id @default(autoincrement())
+    device_replacement_id Int
+    component_type        TypeGroup // Operator, Sensor, Accessory
+    replacement_reason    String?
+    replacement_date      DateTime  @default(now())
+
     // Original components (what was replaced)
     original_simcard_id    Int?
     original_peripheral_id Int?
     original_accessory_id  Int?
-    
+
     // Replacement components (what replaced them)
     replacement_simcard_id    Int?
     replacement_peripheral_id Int?
     replacement_accessory_id  Int?
-    
+
     // Relations
-    device_replacement     DeviceRepairReplacement @relation(fields: [device_replacement_id], references: [id])
-    
+    device_replacement DeviceRepairReplacement @relation(fields: [device_replacement_id], references: [id])
+
     // Original component relations
-    original_simcard       SimCard?          @relation("OriginalSimCard", fields: [original_simcard_id], references: [id])
-    original_peripheral    Peripheral?       @relation("OriginalPeripheral", fields: [original_peripheral_id], references: [id])
-    original_accessory     Accessory?        @relation("OriginalAccessory", fields: [original_accessory_id], references: [id])
-    
+    original_simcard    SimCard?    @relation("OriginalSimCard", fields: [original_simcard_id], references: [id])
+    original_peripheral Peripheral? @relation("OriginalPeripheral", fields: [original_peripheral_id], references: [id])
+    original_accessory  Accessory?  @relation("OriginalAccessory", fields: [original_accessory_id], references: [id])
+
     // Replacement component relations
-    replacement_simcard    SimCard?          @relation("ReplacementSimCard", fields: [replacement_simcard_id], references: [id])
-    replacement_peripheral Peripheral?       @relation("ReplacementPeripheral", fields: [replacement_peripheral_id], references: [id])
-    replacement_accessory  Accessory?        @relation("ReplacementAccessory", fields: [replacement_accessory_id], references: [id])
-    
-    createdAt              DateTime          @default(now())
-    updatedAt              DateTime          @updatedAt
+    replacement_simcard    SimCard?    @relation("ReplacementSimCard", fields: [replacement_simcard_id], references: [id])
+    replacement_peripheral Peripheral? @relation("ReplacementPeripheral", fields: [replacement_peripheral_id], references: [id])
+    replacement_accessory  Accessory?  @relation("ReplacementAccessory", fields: [replacement_accessory_id], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
-model Role{
-    id                   Int               @id @default(autoincrement())
-    name                 String            @unique
-    canLogin             Boolean           @default(false)
-    createdAt            DateTime          @default(now())
-    updatedAt            DateTime          @updatedAt
-    contact_person       ContactPerson[]
-    user                 User[]
-     permissions Permission[]
+model Role {
+    id             Int             @id @default(autoincrement())
+    name           String          @unique
+    canLogin       Boolean         @default(false)
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+    contact_person ContactPerson[]
+    user           User[]
+    permissions    Permission[]
 }
 
 model Permission {
-  id      Int     @id @default(autoincrement())
-  page_name    String  
-  view    Boolean      @default(false)
-  create  Boolean      @default(false)
-  update  Boolean      @default(false)  
-  delete  Boolean      @default(false)
-  roleId    Int
-  role      Role    @relation(fields: [roleId], references: [id])
+    id        Int     @id @default(autoincrement())
+    page_name String
+    view      Boolean @default(false)
+    create    Boolean @default(false)
+    update    Boolean @default(false)
+    delete    Boolean @default(false)
+    roleId    Int
+    role      Role    @relation(fields: [roleId], references: [id])
 }
 
 enum TypeGroup {
-  Vehicle
-  GPS
-  Sensor
-  Accessory
-  Server
-  Operator
-  Full_Device
-  Component_Only
-  Partial_Replacement
+    Vehicle
+    GPS
+    Sensor
+    Accessory
+    Server
+    Operator
+    Full_Device
+    Component_Only
+    Partial_Replacement
 }
 
 enum StatusGroup {

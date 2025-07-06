@@ -51,17 +51,58 @@ export const createServerService = async (
   return server;
 };
 
+export const createExtraServerService = async (
+  prisma,
+  {
+    server_id,
+    type_id,
+    domain_id,
+    status = "Active", // Default status is Active
+  }
+) => {
+  return await prisma.extraServer.create({
+    data:{
+      server_id,
+      type_id,
+      domain_id,
+      status
+    }
+  })
+}
+
+export const updateExtraServerService = async (
+  prisma,
+  {
+    id,
+    server_id,
+    type_id,
+    domain_id,
+    status = "Active", // Default status is Active
+  }
+) => {
+  return await prisma.extraServer.update({
+    where: { id },
+    data: {
+      server_id,
+      type_id,
+      domain_id,
+      status,
+    },
+  });
+};
+
 export const renewalServerService = async (
   prisma,
   {
     id,
-    domain_id,
+    domain,
     type_id,
     subscription_plan_id,
     object_base_fee,
     expire_date,
     invoice_no,
     renewal_date,
+    extra_server_id
   }
 ) => {
   const expireDate = getNewDate(expire_date);
@@ -117,10 +158,10 @@ export const renewalServerService = async (
       //   },
       // });
 
-      await prismaTrans.server.update({
+     const renewalData= await prismaTrans.server.update({
         where: { id },
         data: {
-          domain_id,
+          domain_id: Number(domain[0]),
           type_id,
           subscription_plan_id,
           object_base_fee,
@@ -130,6 +171,16 @@ export const renewalServerService = async (
           ...(status && { status }),
         },
       });
+
+      if (domain.length > 1) {
+              await updateExtraServerService(prismaTrans, {
+                id: extra_server_id,
+                server_id: renewalData.id,
+                type_id: renewalData.type_id,
+                domain_id: Number(domain[1]),
+                status: renewalData.status, // Default status is Active
+              })
+      }
     });
   } catch (error) {
     return error;

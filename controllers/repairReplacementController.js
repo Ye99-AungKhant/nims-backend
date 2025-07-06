@@ -26,6 +26,7 @@ export const createPlacement = async (req, res) => {
   const vehicle_id = bodyData.vehicleId;
   const original_gps_id = bodyData.gpsId;
   const reason = bodyData?.reason;
+  const invoice_no = bodyData?.invoice_no;
   const repair_replacement_by_user_id = bodyData?.repair_replacement_by_user_id;
   const repair_replacement_date = bodyData?.repair_replacement_date;
   const replacementType = bodyData.replacementType;
@@ -95,6 +96,7 @@ export const createPlacement = async (req, res) => {
             type: "Replacement",
             replacement_device_type: "Full_Device",
             reason: reason,
+            invoice_no: invoice_no,
             repair_replacement_by_user_id: repair_replacement_by_user_id,
             repair_replacement_date: repair_replacement_date,
           }
@@ -215,6 +217,7 @@ export const createPlacement = async (req, res) => {
               ? "Partial_Replacement"
               : "Component_Only",
             reason: reason,
+            invoice_no: invoice_no,
             repair_replacement_by_user_id: repair_replacement_by_user_id,
             repair_replacement_date: repair_replacement_date,
           }
@@ -352,6 +355,7 @@ export const createRepair = async (req, res) => {
   const vehicle_id = bodyData.vehicleId;
   const original_gps_id = bodyData.gpsId;
   const reason = bodyData?.reason;
+  const invoice_no = bodyData?.invoice_no;
   const repair_replacement_by_user_id = bodyData?.repair_replacement_by_user_id;
   const repair_replacement_date = bodyData?.repair_replacement_date;
   const serverId = bodyData.server.id;
@@ -362,6 +366,7 @@ export const createRepair = async (req, res) => {
       original_gps_id: original_gps_id,
       type: "Repair",
       reason: reason,
+      invoice_no:invoice_no,
       repair_replacement_by_user_id: repair_replacement_by_user_id,
       repair_replacement_date: repair_replacement_date,
       user_false: user_false,

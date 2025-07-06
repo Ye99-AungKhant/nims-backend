@@ -39,21 +39,26 @@ export const renewalServer = async (req, res) => {
     type,
     domain,
     invoiceNo,
+    extra_server_id
   } = req.body;
 
   try {
-    const renewalData = await renewalServerService(prisma, {
+    await renewalServerService(prisma, {
       id,
-      domain_id: Number(domain),
+      domain: domain,
       type_id: Number(type),
       subscription_plan_id: Number(subscriptionPlan),
       object_base_fee: Number(objectBaseFee),
       expire_date: expireDate,
       invoice_no: invoiceNo,
       renewal_date: renewalDate,
+      extra_server_id
     });
-    apiResponse(res, 200, "Renewal successfully", renewalData);
+
+    apiResponse(res, 200, "Renewal successfully");
   } catch (error) {
+    console.log(error);
+    
     apiResponse(res, 400, "Renewal failed", error);
   }
 };

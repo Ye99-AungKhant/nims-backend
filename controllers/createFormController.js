@@ -22,7 +22,11 @@ import {
   createPeripheralService,
   updatePeripheralService,
 } from "../models/peripheralModel.js";
-import { createServerService } from "../models/serverModel.js";
+import {
+  createExtraServerService,
+  createServerService,
+  updateExtraServerService,
+} from "../models/serverModel.js";
 import {
   createSimCardService,
   updateSimCardService,
@@ -137,7 +141,7 @@ export const createInstallObject = async (req, res) => {
         );
 
         const server = await createServerService(prisma, {
-          domain_id: Number(bodyData.server.domain),
+          domain_id: Number(bodyData.server.domain[0]),
           type_id: Number(bodyData.server.type_id),
           installed_date: bodyData.server.installed_date,
           subscription_plan_id: Number(bodyData.server.subscription_plan_id),
@@ -146,6 +150,15 @@ export const createInstallObject = async (req, res) => {
           object_base_fee: Number(bodyData.server.object_base_fee),
           gps_device_id: gpsDevice.id,
         });
+
+        if (bodyData.server.domain.length > 1) {
+          await createExtraServerService(prisma, {
+            server_id: server.id,
+            type_id: server.type_id,
+            domain_id: Number(bodyData.server.domain[1]),
+            status: server.status, // Default status is Active
+          });
+        }
 
         await Promise.all(
           bodyData.installationEngineer.map((eng) =>
@@ -252,6 +265,7 @@ export const updateInstallObject = async (req, res) => {
                   sensor_type_id: Number(peripheralData.sensor_type_id),
                   qty: Number(peripheralData.qty),
                   detail: peripheralData.detail,
+                  installed_date: peripheralData?.installed_date,
                 });
               } else {
                 return createPeripheralService(prisma, {
@@ -274,6 +288,7 @@ export const updateInstallObject = async (req, res) => {
                 id: accessoryData.id,
                 type_id: Number(accessoryData.type_id),
                 qty: Number(accessoryData.qty),
+                installed_date: accessoryData?.installed_date,
               });
             } else {
               return createAccessoryService(prisma, {
@@ -290,7 +305,7 @@ export const updateInstallObject = async (req, res) => {
         const server = await prisma.server.update({
           where: { id: bodyData.server.id },
           data: {
-            domain_id: Number(bodyData.server.domain),
+            domain_id: Number(bodyData.server.domain[0]),
             type_id: Number(bodyData.server.type_id),
             installed_date: bodyData.server.installed_date,
             subscription_plan_id: Number(bodyData.server.subscription_plan_id),
@@ -299,6 +314,25 @@ export const updateInstallObject = async (req, res) => {
             object_base_fee: Number(bodyData.server.object_base_fee),
           },
         });
+
+        if (bodyData.server.domain.length > 1) {
+          if (bodyData.server?.extra_server_id) {
+            await updateExtraServerService(prisma, {
+              id: bodyData.server.extra_server_id,
+              server_id: server.id,
+              type_id: server.type_id,
+              domain_id: Number(bodyData.server.domain[1]),
+              status: server.status, // Default status is Active
+            });
+          } else {
+            await createExtraServerService(prisma, {
+              server_id: server.id,
+              type_id: server.type_id,
+              domain_id: Number(bodyData.server.domain[1]),
+              status: server.status, // Default status is Active
+            });
+          }
+        }
 
         // Update engineers
         await Promise.all(

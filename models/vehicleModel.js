@@ -49,6 +49,7 @@ export const vehicleChangeService = async (prisma, data) => {
       brand_id: data.brand_id,
       model_id: data.model_id,
       year: data.year,
+      changed_date: new Date(data.changed_date),
       odometer: data.odometer,
     },
   });

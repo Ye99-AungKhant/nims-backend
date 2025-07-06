@@ -157,8 +157,7 @@ export const getDashboardDataService = async (filterYear) => {
     by: ["domain_id"],
     _count: { domain_id: true },
   });
-  log("Domain ID Counts:", domainIdCounts);
-
+  
   const domainIds = domainIdCounts.map((item) => item.domain_id);
 
   const domainBrands = await prisma.brand.findMany({

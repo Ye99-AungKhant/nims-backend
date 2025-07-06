@@ -13,6 +13,7 @@ export const createBrandService = async (name, type_id, type_group) => {
 
 export const getBrandService = async ({ type_id, type_group }) => {
   let typeId;
+  let type;
   if (!type_id && type_group == "Vehicle") {
     typeId = 0;
   } else {
@@ -23,6 +24,22 @@ export const getBrandService = async ({ type_id, type_group }) => {
     type_group,
     type_id: typeId,
   };
+
+  if(type_id){
+  type = await prisma.type.findFirst({
+      where: { id: type_id },
+    })
+  }
+  
+
+  if(type_group == "Server" && type?.name == "Dual"){
+      const brands = await prisma.brand.findMany({
+      where: {type_group},
+      include: { type: true },
+    });
+
+    return brands;
+  }
 
   const brands = await prisma.brand.findMany({
     where: where,
