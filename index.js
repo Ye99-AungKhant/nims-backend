@@ -19,9 +19,11 @@ import { userRouter } from "./routers/user.js";
 import { authRouter } from "./routers/auth.js";
 import { installObjectRouter } from "./routers/installObject.js";
 import { permissionRouter } from "./routers/permission.js";
+
 import { dashboardRouter } from "./routers/dashboard.js";
 import { installImageRouter } from "./routers/installImage.js";
 import { repairReplacementRouter } from "./routers/repairReplacement.js";
+import { authenticateToken } from "./middleware/authMiddleware.js";
 
 const app = express();
 const apiRouter = express.Router();
@@ -38,8 +40,13 @@ app.use("/uploads", express.static("public/uploads"));
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
-apiRouter.use("/dashboard", dashboardRouter);
+
+// Public routes
 apiRouter.use("/login", authRouter);
+
+// Protected routes (require JWT)
+apiRouter.use(authenticateToken);
+apiRouter.use("/dashboard", dashboardRouter);
 apiRouter.use("/installObject", installObjectRouter);
 apiRouter.use("/user", userRouter);
 apiRouter.use("/client", clientRouter);
