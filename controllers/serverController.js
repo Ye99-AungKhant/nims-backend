@@ -39,7 +39,7 @@ export const renewalServer = async (req, res) => {
     type,
     domain,
     invoiceNo,
-    extra_server_id
+    extra_server_id,
   } = req.body;
 
   try {
@@ -52,13 +52,13 @@ export const renewalServer = async (req, res) => {
       expire_date: expireDate,
       invoice_no: invoiceNo,
       renewal_date: renewalDate,
-      extra_server_id
+      extra_server_id,
     });
 
     apiResponse(res, 200, "Renewal successfully");
   } catch (error) {
     console.log(error);
-    
+
     apiResponse(res, 400, "Renewal failed", error);
   }
 };

@@ -40,6 +40,7 @@ export const vehicleChange = async (req, res) => {
     plate_number: bodyData.vehiclePlateNo,
     changed_date: bodyData.changeDate,
     reason: bodyData.reason ?? null,
+    invoice_no: bodyData.invoice_no ?? null,
   };
 
   if (bodyData.vehicleType) {

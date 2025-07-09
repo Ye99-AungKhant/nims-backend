@@ -15,6 +15,8 @@ export const getDashboardData = async (req, res) => {
     const dashboardData = await getDashboardDataService(filterYear);
     apiResponse(res, 200, "Dashboard data", dashboardData);
   } catch (error) {
+    console.log(error);
+
     apiResponse(res, 400, "Dashboard not found", error);
   }
 };

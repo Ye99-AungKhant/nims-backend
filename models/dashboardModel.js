@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
 import prisma from "./../config/prisma.js";
-import { log } from "console";
+
+dayjs.extend(utc);
 
 const now = new Date();
 const currentYear = now.getFullYear();
@@ -43,10 +45,11 @@ export const getDashboardDataService = async (filterYear) => {
     select: {
       installed_date: true,
       expire_date: true,
-      server_activity: {
-        where: { renewal_date: { not: null } },
-        select: { renewal_date: true },
-      },
+      renewal_date: true,
+      // server_activity: {
+      //   where: { renewal_date: { not: null } },
+      //   select: { renewal_date: true },
+      // },
     },
   });
 
@@ -69,8 +72,9 @@ export const getDashboardDataService = async (filterYear) => {
   //   console.log(servers);
 
   for (const server of servers) {
-    const installMonth = dayjs(server.installed_date).format("MMM YYYY");
-    const expireMonth = dayjs(server.expire_date).format("MMM YYYY");
+    const installMonth = dayjs(server.installed_date).utc().format("MMM YYYY");
+    const expireMonth = dayjs(server.expire_date).utc().format("MMM YYYY");
+    const renewalMonth = dayjs(server.renewal_date).utc().format("MMM YYYY");
 
     // Count installed
     if (dayjs(server.installed_date).year() === year) {
@@ -97,27 +101,27 @@ export const getDashboardDataService = async (filterYear) => {
     }
 
     // Count renewals
-    for (const activity of server.server_activity) {
-      if (
-        activity.renewal_date &&
-        dayjs(activity.renewal_date).year() === year
-      ) {
-        const renewalMonth = dayjs(activity.renewal_date).format("MMM YYYY");
-        monthlyStats[renewalMonth] ??= {
-          Installed: 0,
-          Expired: 0,
-          Renewal: 0,
-          Repair: 0,
-          Replacement: 0,
-        };
-        monthlyStats[renewalMonth].Renewal++;
-      }
+    // for (const activity of server.server_activity) {
+    if (dayjs(server.renewal_date).year() === year) {
+      monthlyStats[renewalMonth] ??= {
+        Installed: 0,
+        Expired: 0,
+        Renewal: 0,
+        Repair: 0,
+        Replacement: 0,
+      };
+      monthlyStats[renewalMonth].Renewal++;
     }
+    // }
   }
 
   // Add repair and replacement stats
   for (const record of deviceRepairs) {
-    const month = dayjs(record.repair_replacement_date).format("MMM YYYY");
+    // Use UTC to avoid timezone shifting into next month
+    const month = dayjs(record.repair_replacement_date)
+      .utc()
+      .format("MMM YYYY");
+
     monthlyStats[month] ??= {
       Installed: 0,
       Expired: 0,
@@ -142,7 +146,6 @@ export const getDashboardDataService = async (filterYear) => {
     distinct: ["brand_id"],
     select: { brand: true },
   });
-  console.log("Unique Brands:", uniqueBrands);
 
   const brandCount = uniqueBrands.length;
 
@@ -157,7 +160,7 @@ export const getDashboardDataService = async (filterYear) => {
     by: ["domain_id"],
     _count: { domain_id: true },
   });
-  
+
   const domainIds = domainIdCounts.map((item) => item.domain_id);
 
   const domainBrands = await prisma.brand.findMany({
@@ -369,6 +372,7 @@ export const getAccessoryUsageService = async () => {
       accessory: {
         select: {
           id: true,
+          qty: true,
         },
       },
     },
@@ -377,7 +381,7 @@ export const getAccessoryUsageService = async () => {
   const accessoryTypeUsageResult = accessoryTypeUsage.map((type) => ({
     typeId: type.id,
     typeName: type.name,
-    usedCount: type.accessory.length,
+    usedCount: type.accessory.reduce((sum, acc) => sum + (acc.qty || 0), 0),
   }));
 
   return {

@@ -18,6 +18,8 @@ async function main() {
             create: true,
             update: true,
             delete: false,
+            repair: true,
+            renewal: true,
           },
           {
             page_name: "clients",

@@ -38,6 +38,7 @@ export const vehicleChangeService = async (prisma, data) => {
       odometer: vehicleExist.odometer,
       changed_date: new Date(data.changed_date) || new Date(),
       reason: data.reason,
+      invoice_no: data.invoice_no,
     },
   });
 
@@ -51,6 +52,7 @@ export const vehicleChangeService = async (prisma, data) => {
       year: data.year,
       changed_date: new Date(data.changed_date),
       odometer: data.odometer,
+      invoice_no: data.invoice_no,
     },
   });
   return { vehicle, vehicleActivity };

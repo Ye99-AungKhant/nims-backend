@@ -16,7 +16,7 @@ export const getInstalledObjectService = async (
     client: { include: { contact_person: true } },
     device: {
       include: {
-        server: { include: { domain: true, extra_server:true } },
+        server: { include: { domain: true, extra_server: true } },
         replacements: true,
         simcard: true,
       },
@@ -42,7 +42,9 @@ export const getInstalledObjectService = async (
     if (filter_by_date && fromDate) {
       const dateFilter = {
         gte: new Date(fromDate),
-        ...(toDate && { lte: new Date(toDate) }),
+        ...(toDate && {
+          lte: new Date(new Date(toDate).setHours(23, 59, 59, 999)),
+        }),
       };
 
       if (filter_by_date === "installed_date") {
@@ -50,8 +52,43 @@ export const getInstalledObjectService = async (
       } else if (filter_by_date === "expire_date") {
         whereCondition.device.some.server.some.expire_date = dateFilter;
       } else if (filter_by_date === "renewal_date") {
-        whereCondition.device.some.server.some.renewal_date = dateFilter;
-      } else if (filter_by_date === "repair_replacement_date") {
+        // Combine both conditions in a single .some with AND array
+        const year = new Date(fromDate).getFullYear();
+        whereCondition.device.some.server.some = {
+          AND: [
+            { renewal_date: dateFilter },
+            {
+              OR: [
+                {
+                  installed_date: {
+                    gte: new Date(`${year}-01-01T00:00:00.000Z`),
+                    lte: new Date(`${year}-12-31T23:59:59.999Z`),
+                  },
+                },
+                {
+                  expire_date: {
+                    gte: new Date(`${year}-01-01T00:00:00.000Z`),
+                    lte: new Date(`${year}-12-31T23:59:59.999Z`),
+                  },
+                },
+              ],
+            },
+          ],
+        };
+      } else if (filter_by_date === "repair_date") {
+        // Filter by repair date in DeviceRepairReplacement
+        if (!whereCondition.device.some.replacements) {
+          whereCondition.device.some.replacements = { some: {} };
+        }
+        whereCondition.device.some.replacements.some.type = "Repair";
+        whereCondition.device.some.replacements.some.repair_replacement_date =
+          dateFilter;
+      } else if (filter_by_date === "replacement_date") {
+        // Filter by replacement date in DeviceRepairReplacement
+        if (!whereCondition.device.some.replacements) {
+          whereCondition.device.some.replacements = { some: {} };
+        }
+        whereCondition.device.some.replacements.some.type = "Replacement";
         whereCondition.device.some.replacements.some.repair_replacement_date =
           dateFilter;
       }
@@ -88,11 +125,11 @@ export const getInstalledObjectService = async (
               domain: true,
               warranty_plan: true,
               installation_engineer: true,
-              extra_server:{
-                include:{
+              extra_server: {
+                include: {
                   type: true,
                   domain: true,
-                }
+                },
               },
               server_activity: {
                 include: {
@@ -176,18 +213,6 @@ export const getInstalledObjectService = async (
       },
     ];
   }
-
-  // if (filter_by) {
-  //   whereCondition.device = {
-  //     some: {
-  //       server: {
-  //         some: {
-  //           status: filter_by,
-  //         },
-  //       },
-  //     },
-  //   };
-  // }
 
   if (client_id) {
     const totalVehicles = await prisma.vehicle.findMany({

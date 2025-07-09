@@ -60,6 +60,8 @@ model Vehicle {
     year         Int?
     odometer     String?
     changed_date  DateTime?
+    invoice_no   String?
+    status        StatusGroup @default(Active)
     createdAt    DateTime    @default(now())
     updatedAt    DateTime    @updatedAt
     client       Client      @relation(fields: [client_id], references: [id])
@@ -80,6 +82,7 @@ model VehicleActivity {
     odometer      String?
     changed_date  DateTime               @default(now())
     reason        String?
+    invoice_no   String?
     createdAt     DateTime               @default(now())
     updatedAt     DateTime               @updatedAt
     type          Type?                  @relation(fields: [type_id], references: [id])
@@ -401,6 +404,8 @@ model Permission {
     create    Boolean @default(false)
     update    Boolean @default(false)
     delete    Boolean @default(false)
+    renewal  Boolean @default(false)
+    repair    Boolean @default(false)
     roleId    Int
     role      Role    @relation(fields: [roleId], references: [id])
 }
