@@ -19,6 +19,7 @@ import {
   updateSIMCardReplacementService,
 } from "../models/repairReplacementModel.js";
 import { createSimCardService } from "../models/simCardModel.js";
+import logger from "../util/logger.js";
 
 export const createPlacement = async (req, res) => {
   const bodyData = JSON.parse(req.body.data);
@@ -345,6 +346,7 @@ export const createPlacement = async (req, res) => {
     });
     apiResponse(res, 201, "Replacement successful.");
   } catch (error) {
+    logger.error(`Replacement Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Replacement failed", error);
   }
 };
@@ -366,7 +368,7 @@ export const createRepair = async (req, res) => {
       original_gps_id: original_gps_id,
       type: "Repair",
       reason: reason,
-      invoice_no:invoice_no,
+      invoice_no: invoice_no,
       repair_replacement_by_user_id: repair_replacement_by_user_id,
       repair_replacement_date: repair_replacement_date,
       user_false: user_false,
@@ -397,6 +399,7 @@ export const createRepair = async (req, res) => {
     }
     apiResponse(res, 201, "Repair successful.");
   } catch (error) {
+    logger.error(`Repair Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Repair failed", error);
   }
 };
@@ -409,6 +412,7 @@ export const getGPSReplacementHistory = async (req, res) => {
     );
     apiResponse(res, 200, "", history);
   } catch (error) {
+    logger.error(`GetGPSReplacementHistory Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Get GSP device replacement history failed.", error);
   }
 };
@@ -419,6 +423,7 @@ export const updateGPSReplacement = async (req, res) => {
     await updateGPSReplacementService(prisma, bodyData);
     apiResponse(res, 200, "GPS replacement updated successfully.");
   } catch (error) {
+    logger.error(`UpdateGPSReplacement Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Update GPS replacement failed.", error);
   }
 };
@@ -431,6 +436,9 @@ export const getSIMCardReplacementHistory = async (req, res) => {
     );
     apiResponse(res, 200, "", history);
   } catch (error) {
+    logger.error(
+      `GetSIMCardReplacementHistory Error: ${error?.stack || error}`
+    );
     apiResponse(res, 400, "Get SIM card replacement history failed.", error);
   }
 };
@@ -441,6 +449,7 @@ export const updateSIMCardReplacement = async (req, res) => {
     await updateSIMCardReplacementService(prisma, bodyData);
     apiResponse(res, 200, "SIM card replacement updated successfully.");
   } catch (error) {
+    logger.error(`UpdateSIMCardReplacement Error: ${error?.stack || error}`);
     console.log(error);
     apiResponse(res, 400, "Update simcard replacement failed.", error);
   }
@@ -454,6 +463,9 @@ export const getPeripheralReplacementHistory = async (req, res) => {
     );
     apiResponse(res, 200, "", history);
   } catch (error) {
+    logger.error(
+      `GetPeripheralReplacementHistory Error: ${error?.stack || error}`
+    );
     apiResponse(res, 400, "Get peripheral replacement history failed.", error);
   }
 };
@@ -464,6 +476,7 @@ export const updatePeripheralReplacement = async (req, res) => {
     await updatePeripheralReplacementService(prisma, bodyData);
     apiResponse(res, 200, "Peripheral replacement updated successfully.");
   } catch (error) {
+    logger.error(`UpdatePeripheralReplacement Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Update peripheral replacement failed.", error);
   }
 };
@@ -476,6 +489,9 @@ export const getAccessoryReplacementHistory = async (req, res) => {
     );
     apiResponse(res, 200, "", history);
   } catch (error) {
+    logger.error(
+      `GetAccessoryReplacementHistory Error: ${error?.stack || error}`
+    );
     apiResponse(res, 400, "Get accessory replacement history failed.", error);
   }
 };
@@ -486,6 +502,7 @@ export const updateAccessoryReplacement = async (req, res) => {
     await updateAccessoryReplacementService(prisma, bodyData);
     apiResponse(res, 200, "Accessory replacement updated successfully.");
   } catch (error) {
+    logger.error(`UpdateAccessoryReplacement Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Update accessory replacement failed.", error);
   }
 };
@@ -498,6 +515,9 @@ export const getRepairReplacementFullHistory = async (req, res) => {
     );
     apiResponse(res, 200, "", history);
   } catch (error) {
+    logger.error(
+      `GetRepairReplacementFullHistory Error: ${error?.stack || error}`
+    );
     apiResponse(res, 400, "Get repair replacement history failed.", error);
   }
 };
@@ -508,6 +528,7 @@ export const deleteReplacement = async (req, res) => {
     await deleteRplacementService(prisma, id);
     apiResponse(res, 200, "Type delete Successful.");
   } catch (error) {
+    logger.error(`DeleteReplacement Error: ${error?.stack || error}`);
     apiResponse(res, 400, "Type delete failed.", error);
   }
 };
