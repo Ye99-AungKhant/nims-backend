@@ -31,6 +31,7 @@ export const getGPSReplacementHistoryService = async (prisma, deviceId) => {
           },
           replaced_by_user: true,
         },
+        orderBy: { id: "asc" },
       },
       brand: true,
       model: true,
@@ -85,7 +86,11 @@ export const getSIMCardReplacementHistoryService = async (
       replacements: {
         where: { type: "Replacement", is_deleted: false },
         include: {
-          replacement_gps: true,
+          replacement_gps: {
+            include: {
+              simcard: true,
+            },
+          },
           component_replacements: {
             include: {
               original_simcard: true,
@@ -94,18 +99,24 @@ export const getSIMCardReplacementHistoryService = async (
           },
         },
       },
-      simcard: { where: { status: "Active" } },
+      simcard: true,
     },
   });
+
+  // return simChain;
 
   const getSimcardHistory = (simChain) => {
     const simcards = [];
     if (simChain.replacements.length == 0) return simChain.simcard;
 
-    const componentReplacements = simChain.replacements.flatMap(
-      (r) => r.component_replacements
+    const replaced_sim = simChain.replacements.flatMap(
+      (r) => r?.replacement_gps?.simcard
     );
-    // console.log(simChain.replacements.id);
+
+    const componentReplacements = simChain.replacements
+      .flatMap((r) => r.component_replacements)
+      .filter((cr) => cr.component_type === "Operator")
+      .sort((a, b) => a.id - b.id);
 
     if (componentReplacements.length > 0) {
       if (!componentReplacements[0].original_simcard) return simChain.simcard;
@@ -113,16 +124,31 @@ export const getSIMCardReplacementHistoryService = async (
 
       componentReplacements.forEach((cr, index) => {
         if (!cr.replacement_simcard) return simChain.simcard;
+
         simcards.push({
           ...cr.replacement_simcard,
           replacement_component_id: cr.id,
           replacement_reason: cr.replacement_reason,
           replacement_date: cr.replacement_date,
-          replacement_id: simChain.replacements[index].id,
+          replacement_id: cr.device_replacement_id,
         });
       });
 
-      return simcards;
+      const simcardIds = new Set(simcards.map((s) => s.id));
+
+      // Step 2: Filter out any replaced_sim entries that are already in simcards
+      const filteredReplaced = replaced_sim.filter(
+        (s) => !simcardIds.has(s?.id)
+      );
+
+      // Step 3: Combine the simcards with the filtered replaced sims
+      const mergedSimcards = [...simcards, ...filteredReplaced]
+        .filter((s) => s !== null && s !== undefined)
+        .sort((a, b) => a.id - b.id);
+
+      return mergedSimcards;
+    } else {
+      return simChain.simcard;
     }
   };
   return getSimcardHistory(simChain);
@@ -158,49 +184,107 @@ export const getPeripheralReplacementHistoryService = async (
   prisma,
   gpsDeviceId
 ) => {
-  const periperalChain = await prisma.peripheral.findMany({
-    where: {
-      device_id: gpsDeviceId,
-    },
+  const peripheralChain = await prisma.gPSDevice.findUnique({
+    where: { id: gpsDeviceId },
     include: {
-      type: true,
-      replacement_of: {
+      replacements: {
+        where: { type: "Replacement", is_deleted: false },
         include: {
-          device_replacement: true,
+          replacement_gps: {
+            include: {
+              peripheral: {
+                include: {
+                  type: true,
+                  peripheralDetail: {
+                    include: { model: true, brand: true, warranty_plan: true },
+                  },
+                },
+              },
+            },
+          },
+          component_replacements: {
+            include: {
+              original_peripheral: {
+                include: {
+                  type: true,
+                  peripheralDetail: {
+                    include: { model: true, brand: true, warranty_plan: true },
+                  },
+                },
+              },
+              replacement_peripheral: {
+                include: {
+                  type: true,
+                  peripheralDetail: {
+                    include: { model: true, brand: true, warranty_plan: true },
+                  },
+                },
+              },
+            },
+          },
         },
       },
-      peripheralDetail: {
-        include: { model: true, brand: true, warranty_plan: true },
+      peripheral: {
+        where: { status: "Active" },
+        include: {
+          type: true,
+          peripheralDetail: {
+            include: { model: true, brand: true, warranty_plan: true },
+          },
+        },
       },
     },
-    orderBy: { id: "asc" },
   });
+  // return peripheralChain;
 
-  const getPeripheralHistory = (periperalChain) => {
-    return periperalChain
-      .map((item) => {
-        if (item.replacement_of) {
-          if (!item.replacement_of.length > 0) return item;
-          return {
-            ...item,
-            replacement_id: item.replacement_of[0].id,
-            replacement_reason: item.replacement_of[0].replacement_reason,
-            replacement_date: item.replacement_of[0].replacement_date,
-          };
-        }
-      })
-      .filter((peripheral) => {
-        if (peripheral.replacement_of.length > 0) {
-          return peripheral.replacement_of[0].device_replacement?.is_deleted ==
-            false
-            ? peripheral
-            : null;
-        } else {
-          return peripheral;
-        }
+  const getPeripheralHistory = (peripheralChain) => {
+    const peripherals = [];
+    if (peripheralChain.replacements.length == 0)
+      return peripheralChain.peripheral;
+
+    const replaced_peripherals = peripheralChain.replacements.flatMap(
+      (r) => r?.replacement_gps?.peripheral
+    );
+
+    const componentReplacements = peripheralChain.replacements
+      .flatMap((r) => r.component_replacements)
+      .filter((cr) => cr.component_type === "Sensor")
+      .sort((a, b) => a.id - b.id);
+
+    if (componentReplacements.length > 0) {
+      if (!componentReplacements[0].original_peripheral)
+        return peripheralChain.peripheral;
+      peripherals.push(componentReplacements[0].original_peripheral);
+
+      componentReplacements.forEach((cr, index) => {
+        if (!cr.replacement_peripheral) return peripheralChain.peripheral;
+        peripherals.push({
+          ...cr.replacement_peripheral,
+          replacement_component_id: cr.id,
+          replacement_reason: cr.replacement_reason,
+          replacement_date: cr.replacement_date,
+          replacement_id: cr.device_replacement_id,
+        });
       });
+
+      const peripheralIds = new Set(peripherals.map((s) => s.id));
+
+      // Step 2: Filter out any replaced_peripheral entries that are already in peripherals
+      const filteredReplaced = replaced_peripherals.filter(
+        (s) => !peripheralIds.has(s?.id)
+      );
+
+      // Step 3: Combine the peripherals with the filtered replaced peripherals
+      const mergedPeripherals = [...peripherals, ...filteredReplaced]
+        .filter((s) => s !== null && s !== undefined)
+        .sort((a, b) => a.id - b.id);
+
+      return mergedPeripherals;
+    } else {
+      return peripheralChain.peripheral;
+    }
   };
-  return getPeripheralHistory(periperalChain);
+  return getPeripheralHistory(peripheralChain);
 };
 
 export const updatePeripheralReplacementService = async (prisma, data) => {
@@ -212,21 +296,25 @@ export const updatePeripheralReplacementService = async (prisma, data) => {
   };
   await updatePeripheralService(prisma, peripheralData);
 
-  const component = await prisma.componentReplacement.update({
-    where: { id: data.replacementId },
-    data: {
-      replacement_reason: data.reason,
-      replacement_date: new Date(data.repair_replacement_date),
-    },
-  });
+  if (data.reason || data.repair_replacement_date) {
+    await prisma.deviceRepairReplacement.update({
+      where: { id: data.replacementId },
+      data: {
+        reason: data.reason,
+        repair_replacement_date: new Date(data.repair_replacement_date),
+      },
+    });
 
-  await prisma.deviceRepairReplacement.update({
-    where: { id: component.device_replacement_id },
-    data: {
-      reason: data.reason,
-      repair_replacement_date: new Date(data.repair_replacement_date),
-    },
-  });
+    await prisma.componentReplacement.update({
+      where: {
+        id: data.replacement_component_id,
+      },
+      data: {
+        replacement_reason: data.reason,
+        replacement_date: new Date(data.repair_replacement_date),
+      },
+    });
+  }
   return;
 };
 
@@ -234,43 +322,88 @@ export const getAccessoryReplacementHistoryService = async (
   prisma,
   gpsDeviceId
 ) => {
-  const accessoryChain = await prisma.accessory.findMany({
-    where: { device_id: gpsDeviceId },
+  const accessoryChain = await prisma.gPSDevice.findUnique({
+    where: { id: gpsDeviceId },
     include: {
-      type: true,
-      replacement_of: {
+      replacements: {
+        where: { type: "Replacement", is_deleted: false },
         include: {
-          device_replacement: true,
+          replacement_gps: {
+            include: {
+              accessory: { include: { type: true } },
+            },
+          },
+          component_replacements: {
+            include: {
+              original_accessory: {
+                include: { type: true },
+              },
+              replacement_accessory: {
+                include: { type: true },
+              },
+            },
+          },
         },
       },
+      accessory: {
+        where: { status: "Active" },
+        include: { type: true },
+      },
     },
-    orderBy: { id: "asc" },
   });
 
-  const getAccessoryChainHistory = (accessoryChain) => {
-    return accessoryChain
-      .map((item) => {
-        if (item.replacement_of) {
-          if (!item.replacement_of.length > 0) return item;
-          return {
-            ...item,
-            replacement_reason: item.replacement_of[0].replacement_reason,
-            replacement_date: item.replacement_of[0].replacement_date,
-          };
-        }
-      })
-      .filter((accessory) => {
-        if (accessory.replacement_of.length > 0) {
-          return accessory.replacement_of[0].device_replacement?.is_deleted ==
-            false
-            ? accessory
-            : null;
-        } else {
-          return accessory;
-        }
+  // return accessoryChain;
+
+  const getAccessoryHistory = (accessoryChain) => {
+    const accessories = [];
+    if (accessoryChain.replacements.length == 0)
+      return accessoryChain.accessory;
+
+    const replaced_accessory = accessoryChain.replacements.flatMap(
+      (r) => r?.replacement_gps?.accessory
+    );
+
+    const componentReplacements = accessoryChain.replacements
+      .flatMap((r) => r.component_replacements)
+      .filter((cr) => cr.component_type === "Accessory")
+      .sort((a, b) => a.id - b.id);
+
+    console.log(componentReplacements);
+
+    if (componentReplacements.length > 0) {
+      if (!componentReplacements[0].original_accessory)
+        return accessoryChain.accessory;
+      accessories.push(componentReplacements[0].original_accessory);
+
+      componentReplacements.forEach((cr, index) => {
+        if (!cr.replacement_accessory) return accessoryChain.accessory;
+        accessories.push({
+          ...cr.replacement_accessory,
+          replacement_component_id: cr.id,
+          replacement_reason: cr.replacement_reason,
+          replacement_date: cr.replacement_date,
+          replacement_id: cr.device_replacement_id,
+        });
       });
+
+      const accessoryIds = new Set(accessories.map((s) => s.id));
+
+      // Step 2: Filter out any replaced_accessory entries that are already in accessories
+      const filteredReplaced = replaced_accessory.filter(
+        (s) => !accessoryIds.has(s?.id)
+      );
+
+      // Step 3: Combine the accessories with the filtered replaced accessories
+      const mergedAccessories = [...accessories, ...filteredReplaced]
+        .filter((s) => s !== null && s !== undefined)
+        .sort((a, b) => a.id - b.id);
+
+      return mergedAccessories;
+    } else {
+      return accessoryChain.accessory;
+    }
   };
-  return getAccessoryChainHistory(accessoryChain);
+  return getAccessoryHistory(accessoryChain);
 };
 
 export const updateAccessoryReplacementService = async (prisma, data) => {
@@ -329,7 +462,7 @@ export const getRepairReplacementFullHistoryService = async (
           },
         },
         orderBy: { id: "asc" },
-      }
+      },
     },
   });
 
@@ -347,7 +480,7 @@ export const getRepairReplacementFullHistoryService = async (
   //   return { ...gpsChain, replacements: [] };
   // }
 
-  return {...gpsChain, vehicleChange:activities};
+  return { ...gpsChain, vehicleChange: activities };
 };
 
 export const deleteRplacementService = async (prisma, id) => {

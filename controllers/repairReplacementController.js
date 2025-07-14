@@ -26,13 +26,14 @@ export const createPlacement = async (req, res) => {
   const files = req.files;
   const vehicle_id = bodyData.vehicleId;
   const original_gps_id = bodyData.gpsId;
+  const replaced_gps_id = bodyData.gpsId_replaced;
   const reason = bodyData?.reason;
   const invoice_no = bodyData?.invoice_no;
   const repair_replacement_by_user_id = bodyData?.repair_replacement_by_user_id;
   const repair_replacement_date = bodyData?.repair_replacement_date;
   const replacementType = bodyData.replacementType;
   const serverId = bodyData.server.id;
-  let gpsDeviceId = original_gps_id;
+  let gpsDeviceId = replaced_gps_id;
 
   try {
     await prisma.$transaction(async (prisma) => {
@@ -47,46 +48,15 @@ export const createPlacement = async (req, res) => {
         });
 
         // 2. Create new components
-        const newSimcards = await Promise.all(
-          bodyData.operators.map(async (sim) => {
-            return await createSimCardService(prisma, {
-              device_id: newgpsDevice.id,
-              phone_no: sim.phone_no,
-              operator: sim.operator,
-            });
-          })
-        );
-
-        const newPeripherals = await Promise.all(
-          bodyData.peripheral.map(async (peripheralData) => {
-            return await createPeripheralService(prisma, {
-              device_id: newgpsDevice.id,
-              sensor_type_id: Number(peripheralData.sensor_type_id),
-              qty: Number(peripheralData.qty),
-              detail: peripheralData.detail,
-            });
-          })
-        );
-
-        const newAccessories = await Promise.all(
-          bodyData.accessory.map(async (accessoryData) => {
-            return await createAccessoryService(prisma, {
-              device_id: newgpsDevice.id,
-              type_id: Number(accessoryData.type_id),
-              qty: Number(accessoryData.qty),
-            });
-          })
-        );
-
-        // 3. Get original components
-        const originalDevice = await prisma.gPSDevice.findUnique({
-          where: { id: original_gps_id },
-          include: {
-            simcard: { where: { status: "Active" } },
-            peripheral: { where: { status: "Active" } },
-            accessory: { where: { status: "Active" } },
-          },
-        });
+        // const newSimcards = await Promise.all(
+        //   bodyData.operators.map(async (sim) => {
+        //     return await createSimCardService(prisma, {
+        //       device_id: newgpsDevice.id,
+        //       phone_no: sim.phone_no,
+        //       operator: sim.operator,
+        //     });
+        //   })
+        // );
 
         // 4. Create device replacement record
         const deviceReplacement = await createDeviceRepairReplacementService(
@@ -103,68 +73,245 @@ export const createPlacement = async (req, res) => {
           }
         );
 
+        await Promise.all(
+          bodyData.operators.map(async (simData) => {
+            if (!simData?.is_replacement) {
+              return await prisma.simCard.update({
+                where: { id: simData?.id },
+                data: { device_id: newgpsDevice.id },
+              });
+            }
+
+            const newSim = await createSimCardService(prisma, {
+              device_id: newgpsDevice.id,
+              phone_no: simData.phone_no,
+              operator: simData.operator,
+            });
+
+            await prisma.componentReplacement.create({
+              data: {
+                device_replacement_id: deviceReplacement.id,
+                component_type: "Operator",
+                replacement_reason: reason,
+                replacement_date: new Date(repair_replacement_date),
+                original_simcard_id: simData.id,
+                replacement_simcard_id: newSim.id,
+              },
+            });
+
+            if (simData?.id) {
+              await prisma.simCard.update({
+                where: { id: simData?.id },
+                data: { status: "Replaced" },
+              });
+            }
+          })
+        );
+
+        // const newPeripherals = await Promise.all(
+        //   bodyData.peripheral.map(async (peripheralData) => {
+        //     return await createPeripheralService(prisma, {
+        //       device_id: newgpsDevice.id,
+        //       sensor_type_id: Number(peripheralData.sensor_type_id),
+        //       qty: Number(peripheralData.qty),
+        //       detail: peripheralData.detail,
+        //     });
+        //   })
+        // );
+
+        await Promise.all(
+          bodyData.peripheral.map(async (peripheralData) => {
+            if (!peripheralData?.is_replacement) {
+              return await prisma.peripheral.update({
+                where: {
+                  id: peripheralData?.id || peripheralData?.replaced_id,
+                },
+                data: { device_id: newgpsDevice.id },
+              });
+            }
+
+            const newPeripheral = await createPeripheralService(prisma, {
+              device_id: newgpsDevice.id,
+              sensor_type_id: Number(peripheralData.sensor_type_id),
+              qty: Number(peripheralData.qty),
+              detail: peripheralData.detail,
+            });
+
+            await prisma.componentReplacement.create({
+              data: {
+                device_replacement_id: deviceReplacement.id,
+                component_type: "Sensor",
+                replacement_reason: reason,
+                replacement_date: new Date(repair_replacement_date),
+                original_peripheral_id:
+                  peripheralData?.id || peripheralData.replaced_id,
+                replacement_peripheral_id: newPeripheral.id,
+              },
+            });
+
+            if (peripheralData?.id || peripheralData?.replaced_id) {
+              await prisma.peripheral.update({
+                where: {
+                  id: peripheralData?.id || peripheralData?.replaced_id,
+                },
+                data: { status: "Replaced" },
+              });
+            }
+          })
+        );
+
+        // const newAccessories = await Promise.all(
+        //   bodyData.accessory.map(async (accessoryData) => {
+        //     return await createAccessoryService(prisma, {
+        //       device_id: newgpsDevice.id,
+        //       type_id: Number(accessoryData.type_id),
+        //       qty: Number(accessoryData.qty),
+        //     });
+        //   })
+        // );
+
+        await Promise.all(
+          bodyData.accessory.map(async (accessoryData) => {
+            if (!accessoryData?.is_replacement) {
+              return await prisma.accessory.update({
+                where: {
+                  id: accessoryData?.id || accessoryData?.replaced_id,
+                },
+                data: { device_id: newgpsDevice.id },
+              });
+            }
+
+            const newAccessory = await createAccessoryService(prisma, {
+              device_id: newgpsDevice.id,
+              type_id: Number(accessoryData.type_id),
+              qty: Number(accessoryData.qty),
+            });
+
+            await prisma.componentReplacement.create({
+              data: {
+                device_replacement_id: deviceReplacement.id,
+                component_type: "Accessory",
+                replacement_reason: reason,
+                replacement_date: new Date(repair_replacement_date),
+                original_accessory_id:
+                  accessoryData?.id || accessoryData.replaced_id,
+                replacement_accessory_id: newAccessory.id,
+              },
+            });
+
+            if (accessoryData?.id || accessoryData?.replaced_id) {
+              await prisma.accessory.update({
+                where: {
+                  id: accessoryData?.id || accessoryData?.replaced_id,
+                },
+                data: { status: "Replaced" },
+              });
+            }
+          })
+        );
+
+        // 3. Get original components
+        // const activeDevice = await prisma.gPSDevice.findUnique({
+        //   where: { id: replaced_gps_id },
+        //   include: {
+        //     simcard: { where: { status: "Active" } },
+        //     peripheral: { where: { status: "Active" } },
+        //     accessory: { where: { status: "Active" } },
+        //   },
+        // });
+
         // 5. Track component replacements
         // SimCard replacements
-        for (let i = 0; i < originalDevice.simcard.length; i++) {
-          await prisma.componentReplacement.create({
-            data: {
-              device_replacement_id: deviceReplacement.id,
-              component_type: "Operator",
-              replacement_reason: "Full device replacement",
-              replacement_date: new Date(repair_replacement_date),
-              original_simcard_id: originalDevice.simcard[i]?.id,
-              replacement_simcard_id: newSimcards[i]?.id,
-            },
-          });
-        }
+        // await Promise.all(
+        //   activeDevice.simcard.map(async (simcard, i) => {
+        //     await prisma.componentReplacement.create({
+        //       data: {
+        //         device_replacement_id: deviceReplacement.id,
+        //         component_type: "Operator",
+        //         replacement_reason: reason,
+        //         replacement_date: new Date(repair_replacement_date),
+        //         original_simcard_id: simcard?.id,
+        //         replacement_simcard_id: newSimcards[i]?.id,
+        //       },
+        //     });
+
+        //     if (simcard?.id) {
+        //       await prisma.simCard.update({
+        //         where: { id: simcard.id },
+        //         data: { status: "Replaced" },
+        //       });
+        //     }
+        //   })
+        // );
 
         // Peripheral replacements
-        for (let i = 0; i < originalDevice.peripheral.length; i++) {
-          await prisma.componentReplacement.create({
-            data: {
-              device_replacement_id: deviceReplacement.id,
-              component_type: "Sensor",
-              replacement_reason: "Full device replacement",
-              replacement_date: new Date(repair_replacement_date),
-              original_peripheral_id: originalDevice.peripheral[i]?.id,
-              replacement_peripheral_id: newPeripherals[i]?.id,
-            },
-          });
-        }
+        // await Promise.all(
+        //   activeDevice.peripheral.map(async (peripheral, i) => {
+        //     await prisma.componentReplacement.create({
+        //       data: {
+        //         device_replacement_id: deviceReplacement.id,
+        //         component_type: "Sensor",
+        //         replacement_reason: reason,
+        //         replacement_date: new Date(repair_replacement_date),
+        //         original_peripheral_id:
+        //           peripheral?.id || peripheral.replaced_id,
+        //         replacement_peripheral_id: newPeripherals[i]?.id,
+        //       },
+        //     });
+
+        //     if (peripheral.id || peripheral.replaced_id) {
+        //       await prisma.peripheral.update({
+        //         where: {
+        //           id: peripheral?.id || peripheral.replaced_id,
+        //         },
+        //         data: { status: "Replaced" },
+        //       });
+        //     }
+        //   })
+        // );
 
         // Accessory replacements
-        for (let i = 0; i < originalDevice.accessory.length; i++) {
-          await prisma.componentReplacement.create({
-            data: {
-              device_replacement_id: deviceReplacement.id,
-              component_type: "Accessory",
-              replacement_reason: "Full device replacement",
-              replacement_date: new Date(repair_replacement_date),
-              original_accessory_id: originalDevice.accessory[i]?.id,
-              replacement_accessory_id: newAccessories[i]?.id,
-            },
-          });
-        }
+        // await Promise.all(
+        //   activeDevice.accessory.map(async (accessory, i) => {
+        //     await prisma.componentReplacement.create({
+        //       data: {
+        //         device_replacement_id: deviceReplacement.id,
+        //         component_type: "Accessory",
+        //         replacement_reason: reason,
+        //         replacement_date: new Date(repair_replacement_date),
+        //         original_accessory_id: accessory?.id || accessory.replaced_id,
+        //         replacement_accessory_id: newAccessories[i]?.id,
+        //       },
+        //     });
+
+        //     if (accessory.id || accessory.replaced_id) {
+        //       await prisma.accessory.update({
+        //         where: { id: accessory?.id || accessory.replaced_id },
+        //         data: { status: "Replaced" },
+        //       });
+        //     }
+        //   })
+        // );
 
         // 6. Update original components status
-        await prisma.simCard.updateMany({
-          where: { device_id: original_gps_id, status: "Active" },
-          data: { status: "Replaced" },
-        });
+        // await prisma.simCard.updateMany({
+        //   where: { device_id: replaced_gps_id, status: "Active" },
+        //   data: { status: "Replaced" },
+        // });
 
-        await prisma.peripheral.updateMany({
-          where: { device_id: original_gps_id, status: "Active" },
-          data: { status: "Replaced" },
-        });
+        // await prisma.peripheral.updateMany({
+        //   where: { device_id: replaced_gps_id, status: "Active" },
+        //   data: { status: "Replaced" },
+        // });
 
-        await prisma.accessory.updateMany({
-          where: { device_id: original_gps_id, status: "Active" },
-          data: { status: "Replaced" },
-        });
+        // await prisma.accessory.updateMany({
+        //   where: { device_id: replaced_gps_id, status: "Active" },
+        //   data: { status: "Replaced" },
+        // });
 
         // 7. Update original device status
         await prisma.gPSDevice.update({
-          where: { id: original_gps_id },
+          where: { id: replaced_gps_id },
           data: { status: "Replaced" },
         });
 
@@ -183,13 +330,16 @@ export const createPlacement = async (req, res) => {
           const imageRecords = files.map((file) => ({
             server_id: serverId,
             device_repair_replacement_id: deviceReplacement.id,
+            type: "Replacement",
             image_url: `/uploads/${file.filename}`,
           }));
 
           await createInstallImageService(prisma, imageRecords);
         }
       } else {
-        if (replacementType.includes("GPS_Device")) {
+        const isGPSReplaced = replacementType.includes("GPS_Device");
+
+        if (isGPSReplaced) {
           const gpsDevice = await createGpsDeviceService(prisma, {
             vehicle_id: vehicle_id,
             brand_id: Number(bodyData.gpsBrand),
@@ -201,7 +351,7 @@ export const createPlacement = async (req, res) => {
           gpsDeviceId = gpsDevice.id;
 
           await prisma.gPSDevice.update({
-            where: { id: original_gps_id },
+            where: { id: replaced_gps_id },
             data: { status: "Replaced" },
           });
         }
@@ -210,11 +360,9 @@ export const createPlacement = async (req, res) => {
           prisma,
           {
             original_gps_id: original_gps_id,
-            repair_replacement_gps_id: replacementType.includes("GPS_Device")
-              ? gpsDeviceId
-              : null,
+            repair_replacement_gps_id: isGPSReplaced ? gpsDeviceId : null,
             type: "Replacement",
-            replacement_device_type: replacementType.includes("GPS_Device")
+            replacement_device_type: isGPSReplaced
               ? "Partial_Replacement"
               : "Component_Only",
             reason: reason,
@@ -224,11 +372,40 @@ export const createPlacement = async (req, res) => {
           }
         );
 
+        //Re-associate any un-replaced components to the new device
+        if (!replacementType.includes("SIM")) {
+          await prisma.simCard.updateMany({
+            where: { device_id: replaced_gps_id, status: "Active" },
+            data: { device_id: gpsDeviceId },
+          });
+        }
+        if (!replacementType.includes("Peripheral")) {
+          await prisma.peripheral.updateMany({
+            where: { device_id: replaced_gps_id, status: "Active" },
+            data: { device_id: gpsDeviceId },
+          });
+        }
+        if (!replacementType.includes("Accessories")) {
+          await prisma.accessory.updateMany({
+            where: { device_id: replaced_gps_id, status: "Active" },
+            data: { device_id: gpsDeviceId },
+          });
+        }
+
         if (replacementType.includes("SIM")) {
           await Promise.all(
             bodyData.operators.map(async (simData) => {
+              if (!simData?.is_replacement) {
+                return await prisma.simCard.update({
+                  where: { id: simData?.id },
+                  data: { device_id: gpsDeviceId },
+                });
+              }
+
+              if (!simData?.is_replacement) return;
+
               const newSim = await createSimCardService(prisma, {
-                device_id: gpsDeviceId,
+                device_id: isGPSReplaced ? gpsDeviceId : replaced_gps_id,
                 phone_no: simData.phone_no,
                 operator: simData.operator,
               });
@@ -244,9 +421,9 @@ export const createPlacement = async (req, res) => {
                 },
               });
 
-              if (simData.id) {
+              if (simData?.id) {
                 await prisma.simCard.update({
-                  where: { id: simData.id },
+                  where: { id: simData?.id },
                   data: { status: "Replaced" },
                 });
               }
@@ -257,10 +434,19 @@ export const createPlacement = async (req, res) => {
         if (replacementType.includes("Peripheral")) {
           await Promise.all(
             bodyData.peripheral.map(async (peripheralData) => {
+              if (!peripheralData?.is_replacement) {
+                return await prisma.peripheral.update({
+                  where: {
+                    id: peripheralData?.id || peripheralData?.replaced_id,
+                  },
+                  data: { device_id: gpsDeviceId },
+                });
+              }
+
               if (!peripheralData?.is_replacement) return;
 
               const newPeripheral = await createPeripheralService(prisma, {
-                device_id: gpsDeviceId,
+                device_id: isGPSReplaced ? gpsDeviceId : replaced_gps_id,
                 sensor_type_id: Number(peripheralData.sensor_type_id),
                 qty: Number(peripheralData.qty),
                 detail: peripheralData.detail,
@@ -272,14 +458,17 @@ export const createPlacement = async (req, res) => {
                   component_type: "Sensor",
                   replacement_reason: reason,
                   replacement_date: new Date(repair_replacement_date),
-                  original_peripheral_id: peripheralData.id,
+                  original_peripheral_id:
+                    peripheralData?.id || peripheralData.replaced_id,
                   replacement_peripheral_id: newPeripheral.id,
                 },
               });
 
-              if (peripheralData.id) {
+              if (peripheralData?.id || peripheralData?.replaced_id) {
                 await prisma.peripheral.update({
-                  where: { id: peripheralData.id },
+                  where: {
+                    id: peripheralData?.id || peripheralData?.replaced_id,
+                  },
                   data: { status: "Replaced" },
                 });
               }
@@ -290,10 +479,17 @@ export const createPlacement = async (req, res) => {
         if (replacementType.includes("Accessories")) {
           await Promise.all(
             bodyData.accessory.map(async (accessoryData) => {
-              if (!accessoryData?.is_replacement) return;
+              if (!accessoryData?.is_replacement) {
+                return await prisma.accessory.update({
+                  where: {
+                    id: accessoryData?.id || accessoryData?.replaced_id,
+                  },
+                  data: { device_id: gpsDeviceId },
+                });
+              }
 
               const newAccessory = await createAccessoryService(prisma, {
-                device_id: gpsDeviceId,
+                device_id: isGPSReplaced ? gpsDeviceId : replaced_gps_id,
                 type_id: Number(accessoryData.type_id),
                 qty: Number(accessoryData.qty),
               });
@@ -304,14 +500,17 @@ export const createPlacement = async (req, res) => {
                   component_type: "Accessory",
                   replacement_reason: reason,
                   replacement_date: new Date(repair_replacement_date),
-                  original_accessory_id: accessoryData.id,
+                  original_accessory_id:
+                    accessoryData?.id || accessoryData.replaced_id,
                   replacement_accessory_id: newAccessory.id,
                 },
               });
 
-              if (accessoryData.id) {
+              if (accessoryData?.id || accessoryData?.replaced_id) {
                 await prisma.accessory.update({
-                  where: { id: accessoryData.id },
+                  where: {
+                    id: accessoryData?.id || accessoryData?.replaced_id,
+                  },
                   data: { status: "Replaced" },
                 });
               }

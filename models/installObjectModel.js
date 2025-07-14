@@ -312,7 +312,7 @@ export const getInstalledObjectService = async (
     data = transformedData;
   }
 
-  await updateInstallObjectStatusService();
+  // await updateInstallObjectStatusService();
   // console.log(data);
 
   return { data, totalCount, totalPages };
