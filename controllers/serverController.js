@@ -55,10 +55,14 @@ export const renewalServer = async (req, res) => {
       extra_server_id,
     });
 
-    apiResponse(res, 200, "Renewal successfully");
+    apiResponse(res, 200, "Server was successfully renewed.");
   } catch (error) {
     console.log(error);
-
-    apiResponse(res, 400, "Renewal failed", error);
+    apiResponse(
+      res,
+      400,
+      "Something went wrong while renewing the server. Please try again.",
+      error
+    );
   }
 };

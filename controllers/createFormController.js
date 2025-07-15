@@ -32,6 +32,7 @@ import {
   updateSimCardService,
 } from "../models/simCardModel.js";
 import { createVehicleService } from "../models/vehicleModel.js";
+import logger from "../util/logger.js";
 
 const now = new Date();
 const currentYear = now.getFullYear();
@@ -179,15 +180,19 @@ export const createInstallObject = async (req, res) => {
           await createInstallImageService(prisma, imageRecords);
         }
       });
-      apiResponse(res, 201, "Object installation created successful.");
+      apiResponse(res, 201, "Installation completed successfully.");
     } catch (error) {
-      console.error("Error:", error);
-      apiResponse(res, 400, "Form created failed", error);
+      logger.error(`create new install Error: ${error?.stack || error}`);
+      apiResponse(
+        res,
+        400,
+        "Failed to install the object. Please try again.",
+        error
+      );
     }
   };
 
   await createFormTransaction();
-  // apiResponse(res, 201, "Object installation created successful.");
 };
 
 export const updateInstallObject = async (req, res) => {
@@ -361,10 +366,15 @@ export const updateInstallObject = async (req, res) => {
         }
       });
 
-      apiResponse(res, 200, "Object installation updated successfully.");
+      apiResponse(res, 200, "Installation completed successfully.");
     } catch (error) {
-      console.error("Error updating vehicle and GPS device:", error);
-      apiResponse(res, 400, "Form update failed", error);
+      logger.error(`update installed object Error: ${error?.stack || error}`);
+      apiResponse(
+        res,
+        400,
+        "Failed to update installed object. Please try again.",
+        error
+      );
     }
   };
 
@@ -387,19 +397,27 @@ export const getInstalled = async (req, res) => {
   const currentPage = Math.max(Number(pageIndex) || 1, 1);
   const perPage = Number(pageSize) || 10;
 
-  const installedObjects = await getInstalledObjectService(
-    id,
-    currentPage,
-    perPage,
-    search,
-    filter_by_date,
-    filter_by,
-    fromDate,
-    toDate,
-    client_id
-  );
-
-  apiResponse(res, 200, "", installedObjects);
+  try {
+    const installedObjects = await getInstalledObjectService(
+      id,
+      currentPage,
+      perPage,
+      search,
+      filter_by_date,
+      filter_by,
+      fromDate,
+      toDate,
+      client_id
+    );
+    apiResponse(res, 200, "", installedObjects);
+  } catch (error) {
+    apiResponse(
+      res,
+      400,
+      "Failed to load installed objects due to a network issue. Please try again.",
+      error
+    );
+  }
 };
 
 export const updateInstallObjectStatus = async (req, res) => {

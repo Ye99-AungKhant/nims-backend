@@ -47,17 +47,6 @@ export const createPlacement = async (req, res) => {
           warranty_plan_id: Number(bodyData.warranty),
         });
 
-        // 2. Create new components
-        // const newSimcards = await Promise.all(
-        //   bodyData.operators.map(async (sim) => {
-        //     return await createSimCardService(prisma, {
-        //       device_id: newgpsDevice.id,
-        //       phone_no: sim.phone_no,
-        //       operator: sim.operator,
-        //     });
-        //   })
-        // );
-
         // 4. Create device replacement record
         const deviceReplacement = await createDeviceRepairReplacementService(
           prisma,
@@ -108,17 +97,6 @@ export const createPlacement = async (req, res) => {
           })
         );
 
-        // const newPeripherals = await Promise.all(
-        //   bodyData.peripheral.map(async (peripheralData) => {
-        //     return await createPeripheralService(prisma, {
-        //       device_id: newgpsDevice.id,
-        //       sensor_type_id: Number(peripheralData.sensor_type_id),
-        //       qty: Number(peripheralData.qty),
-        //       detail: peripheralData.detail,
-        //     });
-        //   })
-        // );
-
         await Promise.all(
           bodyData.peripheral.map(async (peripheralData) => {
             if (!peripheralData?.is_replacement) {
@@ -160,16 +138,6 @@ export const createPlacement = async (req, res) => {
           })
         );
 
-        // const newAccessories = await Promise.all(
-        //   bodyData.accessory.map(async (accessoryData) => {
-        //     return await createAccessoryService(prisma, {
-        //       device_id: newgpsDevice.id,
-        //       type_id: Number(accessoryData.type_id),
-        //       qty: Number(accessoryData.qty),
-        //     });
-        //   })
-        // );
-
         await Promise.all(
           bodyData.accessory.map(async (accessoryData) => {
             if (!accessoryData?.is_replacement) {
@@ -209,105 +177,6 @@ export const createPlacement = async (req, res) => {
             }
           })
         );
-
-        // 3. Get original components
-        // const activeDevice = await prisma.gPSDevice.findUnique({
-        //   where: { id: replaced_gps_id },
-        //   include: {
-        //     simcard: { where: { status: "Active" } },
-        //     peripheral: { where: { status: "Active" } },
-        //     accessory: { where: { status: "Active" } },
-        //   },
-        // });
-
-        // 5. Track component replacements
-        // SimCard replacements
-        // await Promise.all(
-        //   activeDevice.simcard.map(async (simcard, i) => {
-        //     await prisma.componentReplacement.create({
-        //       data: {
-        //         device_replacement_id: deviceReplacement.id,
-        //         component_type: "Operator",
-        //         replacement_reason: reason,
-        //         replacement_date: new Date(repair_replacement_date),
-        //         original_simcard_id: simcard?.id,
-        //         replacement_simcard_id: newSimcards[i]?.id,
-        //       },
-        //     });
-
-        //     if (simcard?.id) {
-        //       await prisma.simCard.update({
-        //         where: { id: simcard.id },
-        //         data: { status: "Replaced" },
-        //       });
-        //     }
-        //   })
-        // );
-
-        // Peripheral replacements
-        // await Promise.all(
-        //   activeDevice.peripheral.map(async (peripheral, i) => {
-        //     await prisma.componentReplacement.create({
-        //       data: {
-        //         device_replacement_id: deviceReplacement.id,
-        //         component_type: "Sensor",
-        //         replacement_reason: reason,
-        //         replacement_date: new Date(repair_replacement_date),
-        //         original_peripheral_id:
-        //           peripheral?.id || peripheral.replaced_id,
-        //         replacement_peripheral_id: newPeripherals[i]?.id,
-        //       },
-        //     });
-
-        //     if (peripheral.id || peripheral.replaced_id) {
-        //       await prisma.peripheral.update({
-        //         where: {
-        //           id: peripheral?.id || peripheral.replaced_id,
-        //         },
-        //         data: { status: "Replaced" },
-        //       });
-        //     }
-        //   })
-        // );
-
-        // Accessory replacements
-        // await Promise.all(
-        //   activeDevice.accessory.map(async (accessory, i) => {
-        //     await prisma.componentReplacement.create({
-        //       data: {
-        //         device_replacement_id: deviceReplacement.id,
-        //         component_type: "Accessory",
-        //         replacement_reason: reason,
-        //         replacement_date: new Date(repair_replacement_date),
-        //         original_accessory_id: accessory?.id || accessory.replaced_id,
-        //         replacement_accessory_id: newAccessories[i]?.id,
-        //       },
-        //     });
-
-        //     if (accessory.id || accessory.replaced_id) {
-        //       await prisma.accessory.update({
-        //         where: { id: accessory?.id || accessory.replaced_id },
-        //         data: { status: "Replaced" },
-        //       });
-        //     }
-        //   })
-        // );
-
-        // 6. Update original components status
-        // await prisma.simCard.updateMany({
-        //   where: { device_id: replaced_gps_id, status: "Active" },
-        //   data: { status: "Replaced" },
-        // });
-
-        // await prisma.peripheral.updateMany({
-        //   where: { device_id: replaced_gps_id, status: "Active" },
-        //   data: { status: "Replaced" },
-        // });
-
-        // await prisma.accessory.updateMany({
-        //   where: { device_id: replaced_gps_id, status: "Active" },
-        //   data: { status: "Replaced" },
-        // });
 
         // 7. Update original device status
         await prisma.gPSDevice.update({
@@ -443,8 +312,6 @@ export const createPlacement = async (req, res) => {
                 });
               }
 
-              if (!peripheralData?.is_replacement) return;
-
               const newPeripheral = await createPeripheralService(prisma, {
                 device_id: isGPSReplaced ? gpsDeviceId : replaced_gps_id,
                 sensor_type_id: Number(peripheralData.sensor_type_id),
@@ -543,10 +410,15 @@ export const createPlacement = async (req, res) => {
         }
       }
     });
-    apiResponse(res, 201, "Replacement successful.");
+    apiResponse(res, 201, "Object replaced successfully.");
   } catch (error) {
     logger.error(`Replacement Error: ${error?.stack || error}`);
-    apiResponse(res, 400, "Replacement failed", error);
+    apiResponse(
+      res,
+      400,
+      "Failed to replace the object. Please try again.",
+      error
+    );
   }
 };
 
@@ -596,10 +468,15 @@ export const createRepair = async (req, res) => {
 
       await createInstallImageService(prisma, imageRecords);
     }
-    apiResponse(res, 201, "Repair successful.");
+    apiResponse(res, 201, "Device repaired successfully.");
   } catch (error) {
     logger.error(`Repair Error: ${error?.stack || error}`);
-    apiResponse(res, 400, "Repair failed", error);
+    apiResponse(
+      res,
+      400,
+      "Failed to repair the object. Please try again.",
+      error
+    );
   }
 };
 
@@ -612,7 +489,12 @@ export const getGPSReplacementHistory = async (req, res) => {
     apiResponse(res, 200, "", history);
   } catch (error) {
     logger.error(`GetGPSReplacementHistory Error: ${error?.stack || error}`);
-    apiResponse(res, 400, "Get GSP device replacement history failed.", error);
+    apiResponse(
+      res,
+      400,
+      "Oops! Couldn't load GPS device activity. Please try again.",
+      error
+    );
   }
 };
 
@@ -638,7 +520,12 @@ export const getSIMCardReplacementHistory = async (req, res) => {
     logger.error(
       `GetSIMCardReplacementHistory Error: ${error?.stack || error}`
     );
-    apiResponse(res, 400, "Get SIM card replacement history failed.", error);
+    apiResponse(
+      res,
+      400,
+      "Oops! Couldn't load SIM card activity. Please try again.",
+      error
+    );
   }
 };
 
@@ -665,7 +552,12 @@ export const getPeripheralReplacementHistory = async (req, res) => {
     logger.error(
       `GetPeripheralReplacementHistory Error: ${error?.stack || error}`
     );
-    apiResponse(res, 400, "Get peripheral replacement history failed.", error);
+    apiResponse(
+      res,
+      400,
+      "Oops! Couldn't load peripheral activity. Please try again.",
+      error
+    );
   }
 };
 
@@ -691,7 +583,12 @@ export const getAccessoryReplacementHistory = async (req, res) => {
     logger.error(
       `GetAccessoryReplacementHistory Error: ${error?.stack || error}`
     );
-    apiResponse(res, 400, "Get accessory replacement history failed.", error);
+    apiResponse(
+      res,
+      400,
+      "Oops! Couldn't load accessory activity. Please try again.",
+      error
+    );
   }
 };
 
@@ -717,7 +614,12 @@ export const getRepairReplacementFullHistory = async (req, res) => {
     logger.error(
       `GetRepairReplacementFullHistory Error: ${error?.stack || error}`
     );
-    apiResponse(res, 400, "Get repair replacement history failed.", error);
+    apiResponse(
+      res,
+      400,
+      "Oops! Couldn't load repair/replacement history. Please try again.",
+      error
+    );
   }
 };
 

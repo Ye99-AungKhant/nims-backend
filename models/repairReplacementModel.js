@@ -105,52 +105,68 @@ export const getSIMCardReplacementHistoryService = async (
 
   // return simChain;
 
-  const getSimcardHistory = (simChain) => {
-    const simcards = [];
-    if (simChain.replacements.length == 0) return simChain.simcard;
+  const getComponentSimcardHistory = (componentReplacements) => {
+    const result = [];
 
-    const replaced_sim = simChain.replacements.flatMap(
-      (r) => r?.replacement_gps?.simcard
-    );
-
-    const componentReplacements = simChain.replacements
-      .flatMap((r) => r.component_replacements)
+    const sorted = componentReplacements
       .filter((cr) => cr.component_type === "Operator")
       .sort((a, b) => a.id - b.id);
 
-    if (componentReplacements.length > 0) {
-      if (!componentReplacements[0].original_simcard) return simChain.simcard;
-      simcards.push(componentReplacements[0].original_simcard);
+    if (!sorted.length || !sorted[0].original_simcard) return [];
 
-      componentReplacements.forEach((cr, index) => {
-        if (!cr.replacement_simcard) return simChain.simcard;
+    result.push(sorted[0].original_simcard);
 
-        simcards.push({
+    for (const cr of sorted) {
+      if (cr.replacement_simcard) {
+        result.push({
           ...cr.replacement_simcard,
           replacement_component_id: cr.id,
           replacement_reason: cr.replacement_reason,
           replacement_date: cr.replacement_date,
           replacement_id: cr.device_replacement_id,
         });
-      });
-
-      const simcardIds = new Set(simcards.map((s) => s.id));
-
-      // Step 2: Filter out any replaced_sim entries that are already in simcards
-      const filteredReplaced = replaced_sim.filter(
-        (s) => !simcardIds.has(s?.id)
-      );
-
-      // Step 3: Combine the simcards with the filtered replaced sims
-      const mergedSimcards = [...simcards, ...filteredReplaced]
-        .filter((s) => s !== null && s !== undefined)
-        .sort((a, b) => a.id - b.id);
-
-      return mergedSimcards;
-    } else {
-      return simChain.simcard;
+      }
     }
+
+    return result;
   };
+
+  const getSimcardHistory = (chain) => {
+    const { replacements, simcard: activeSimcards } = chain;
+
+    if (!replacements?.length) return activeSimcards;
+
+    const replacedSimcards = replacements
+      .flatMap((r) => r?.replacement_gps?.simcard)
+      .filter(Boolean);
+
+    const componentHistory = getComponentSimcardHistory(
+      replacements.flatMap((r) => r.component_replacements)
+    );
+
+    console.log("componentHistory", componentHistory);
+
+    // if (!componentHistory.length) return activeSimcards;
+
+    const existingIds = new Set(componentHistory.map((s) => s?.id));
+    console.log("existingIds", existingIds);
+
+    const filteredReplaced = replacedSimcards.filter(
+      (s) => !existingIds.has(s?.id)
+    );
+
+    const mergedSimcards = [...componentHistory, ...filteredReplaced]
+      .filter(Boolean)
+      .sort((a, b) => a?.id - b?.id);
+
+    const mergedIds = new Set(mergedSimcards.map((s) => s?.id));
+    const untouchedSimcards = activeSimcards.filter(
+      (s) => !mergedIds.has(s?.id)
+    );
+
+    return [...untouchedSimcards, ...mergedSimcards];
+  };
+
   return getSimcardHistory(simChain);
 };
 
@@ -235,55 +251,65 @@ export const getPeripheralReplacementHistoryService = async (
       },
     },
   });
-  // return peripheralChain;
 
-  const getPeripheralHistory = (peripheralChain) => {
-    const peripherals = [];
-    if (peripheralChain.replacements.length == 0)
-      return peripheralChain.peripheral;
+  const getComponentHistory = (componentReplacements) => {
+    const result = [];
 
-    const replaced_peripherals = peripheralChain.replacements.flatMap(
-      (r) => r?.replacement_gps?.peripheral
-    );
-
-    const componentReplacements = peripheralChain.replacements
-      .flatMap((r) => r.component_replacements)
+    const sorted = componentReplacements
       .filter((cr) => cr.component_type === "Sensor")
       .sort((a, b) => a.id - b.id);
 
-    if (componentReplacements.length > 0) {
-      if (!componentReplacements[0].original_peripheral)
-        return peripheralChain.peripheral;
-      peripherals.push(componentReplacements[0].original_peripheral);
+    if (!sorted.length || !sorted[0].original_peripheral) return [];
 
-      componentReplacements.forEach((cr, index) => {
-        if (!cr.replacement_peripheral) return peripheralChain.peripheral;
-        peripherals.push({
+    result.push(sorted[0].original_peripheral);
+
+    for (const cr of sorted) {
+      if (cr.replacement_peripheral) {
+        result.push({
           ...cr.replacement_peripheral,
           replacement_component_id: cr.id,
           replacement_reason: cr.replacement_reason,
           replacement_date: cr.replacement_date,
           replacement_id: cr.device_replacement_id,
         });
-      });
-
-      const peripheralIds = new Set(peripherals.map((s) => s.id));
-
-      // Step 2: Filter out any replaced_peripheral entries that are already in peripherals
-      const filteredReplaced = replaced_peripherals.filter(
-        (s) => !peripheralIds.has(s?.id)
-      );
-
-      // Step 3: Combine the peripherals with the filtered replaced peripherals
-      const mergedPeripherals = [...peripherals, ...filteredReplaced]
-        .filter((s) => s !== null && s !== undefined)
-        .sort((a, b) => a.id - b.id);
-
-      return mergedPeripherals;
-    } else {
-      return peripheralChain.peripheral;
+      }
     }
+
+    return result;
   };
+
+  const getPeripheralHistory = (chain) => {
+    const { replacements, peripheral: activePeripherals } = chain;
+
+    if (!replacements?.length) return activePeripherals;
+
+    const replacedPeripherals = replacements
+      .flatMap((r) => r?.replacement_gps?.peripheral)
+      .filter(Boolean);
+
+    const componentHistory = getComponentHistory(
+      replacements.flatMap((r) => r.component_replacements)
+    );
+
+    // if (!componentHistory.length) return activePeripherals;
+
+    const existingIds = new Set(componentHistory.map((p) => p?.id));
+    const filteredReplaced = replacedPeripherals.filter(
+      (p) => !existingIds.has(p?.id)
+    );
+
+    const mergedPeripherals = [...componentHistory, ...filteredReplaced]
+      .filter(Boolean)
+      .sort((a, b) => a?.id - b?.id);
+
+    const mergedIds = new Set(mergedPeripherals.map((p) => p?.id));
+    const untouchedPeripherals = activePeripherals.filter(
+      (p) => !mergedIds.has(p?.id)
+    );
+
+    return [...untouchedPeripherals, ...mergedPeripherals];
+  };
+
   return getPeripheralHistory(peripheralChain);
 };
 
@@ -335,12 +361,8 @@ export const getAccessoryReplacementHistoryService = async (
           },
           component_replacements: {
             include: {
-              original_accessory: {
-                include: { type: true },
-              },
-              replacement_accessory: {
-                include: { type: true },
-              },
+              original_accessory: { include: { type: true } },
+              replacement_accessory: { include: { type: true } },
             },
           },
         },
@@ -352,57 +374,64 @@ export const getAccessoryReplacementHistoryService = async (
     },
   });
 
-  // return accessoryChain;
+  const getComponentAccessoryHistory = (componentReplacements) => {
+    const result = [];
 
-  const getAccessoryHistory = (accessoryChain) => {
-    const accessories = [];
-    if (accessoryChain.replacements.length == 0)
-      return accessoryChain.accessory;
-
-    const replaced_accessory = accessoryChain.replacements.flatMap(
-      (r) => r?.replacement_gps?.accessory
-    );
-
-    const componentReplacements = accessoryChain.replacements
-      .flatMap((r) => r.component_replacements)
+    const sorted = componentReplacements
       .filter((cr) => cr.component_type === "Accessory")
       .sort((a, b) => a.id - b.id);
 
-    console.log(componentReplacements);
+    if (!sorted.length || !sorted[0].original_accessory) return [];
 
-    if (componentReplacements.length > 0) {
-      if (!componentReplacements[0].original_accessory)
-        return accessoryChain.accessory;
-      accessories.push(componentReplacements[0].original_accessory);
+    result.push(sorted[0].original_accessory);
 
-      componentReplacements.forEach((cr, index) => {
-        if (!cr.replacement_accessory) return accessoryChain.accessory;
-        accessories.push({
+    for (const cr of sorted) {
+      if (cr.replacement_accessory) {
+        result.push({
           ...cr.replacement_accessory,
           replacement_component_id: cr.id,
           replacement_reason: cr.replacement_reason,
           replacement_date: cr.replacement_date,
           replacement_id: cr.device_replacement_id,
         });
-      });
-
-      const accessoryIds = new Set(accessories.map((s) => s.id));
-
-      // Step 2: Filter out any replaced_accessory entries that are already in accessories
-      const filteredReplaced = replaced_accessory.filter(
-        (s) => !accessoryIds.has(s?.id)
-      );
-
-      // Step 3: Combine the accessories with the filtered replaced accessories
-      const mergedAccessories = [...accessories, ...filteredReplaced]
-        .filter((s) => s !== null && s !== undefined)
-        .sort((a, b) => a.id - b.id);
-
-      return mergedAccessories;
-    } else {
-      return accessoryChain.accessory;
+      }
     }
+
+    return result;
   };
+
+  const getAccessoryHistory = (chain) => {
+    const { replacements, accessory: activeAccessories } = chain;
+
+    if (!replacements?.length) return activeAccessories;
+
+    const replacedAccessories = replacements
+      .flatMap((r) => r?.replacement_gps?.accessory)
+      .filter(Boolean);
+
+    const componentHistory = getComponentAccessoryHistory(
+      replacements.flatMap((r) => r.component_replacements)
+    );
+
+    // if (!componentHistory.length) return activeAccessories;
+
+    const existingIds = new Set(componentHistory.map((a) => a?.id));
+    const filteredReplaced = replacedAccessories.filter(
+      (a) => !existingIds.has(a?.id)
+    );
+
+    const mergedAccessories = [...componentHistory, ...filteredReplaced]
+      .filter(Boolean)
+      .sort((a, b) => a?.id - b?.id);
+
+    const mergedIds = new Set(mergedAccessories.map((a) => a?.id));
+    const untouchedAccessories = activeAccessories.filter(
+      (a) => !mergedIds.has(a?.id)
+    );
+
+    return [...untouchedAccessories, ...mergedAccessories];
+  };
+
   return getAccessoryHistory(accessoryChain);
 };
 
