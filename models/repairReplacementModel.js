@@ -164,7 +164,11 @@ export const getSIMCardReplacementHistoryService = async (
       (s) => !mergedIds.has(s?.id)
     );
 
-    return [...untouchedSimcards, ...mergedSimcards];
+    const result = [...untouchedSimcards, ...mergedSimcards].sort(
+      (a, b) => a?.id - b?.id
+    );
+
+    return result;
   };
 
   return getSimcardHistory(simChain);
@@ -241,7 +245,6 @@ export const getPeripheralReplacementHistoryService = async (
         },
       },
       peripheral: {
-        where: { status: "Active" },
         include: {
           type: true,
           peripheralDetail: {
@@ -307,7 +310,10 @@ export const getPeripheralReplacementHistoryService = async (
       (p) => !mergedIds.has(p?.id)
     );
 
-    return [...untouchedPeripherals, ...mergedPeripherals];
+    const result = [...untouchedPeripherals, ...mergedPeripherals].sort(
+      (a, b) => a?.id - b?.id
+    );
+    return result;
   };
 
   return getPeripheralHistory(peripheralChain);
@@ -368,11 +374,12 @@ export const getAccessoryReplacementHistoryService = async (
         },
       },
       accessory: {
-        where: { status: "Active" },
         include: { type: true },
       },
     },
   });
+
+  // return accessoryChain;
 
   const getComponentAccessoryHistory = (componentReplacements) => {
     const result = [];
@@ -420,16 +427,20 @@ export const getAccessoryReplacementHistoryService = async (
       (a) => !existingIds.has(a?.id)
     );
 
-    const mergedAccessories = [...componentHistory, ...filteredReplaced]
-      .filter(Boolean)
-      .sort((a, b) => a?.id - b?.id);
+    const mergedAccessories = [...componentHistory, ...filteredReplaced].filter(
+      Boolean
+    );
 
     const mergedIds = new Set(mergedAccessories.map((a) => a?.id));
     const untouchedAccessories = activeAccessories.filter(
       (a) => !mergedIds.has(a?.id)
     );
 
-    return [...untouchedAccessories, ...mergedAccessories];
+    const result = [...untouchedAccessories, ...mergedAccessories].sort(
+      (a, b) => a?.id - b?.id
+    );
+
+    return result;
   };
 
   return getAccessoryHistory(accessoryChain);
