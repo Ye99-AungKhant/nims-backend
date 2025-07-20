@@ -383,3 +383,122 @@ export const updateInstallObjectStatusService = async () => {
     expireSoon: expireSoonData,
   };
 };
+
+export const deleteInstallObjectService = async ({ vehicleId }) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Find all GPSDevice(s) for the vehicle
+    const gpsDevices = await tx.gPSDevice.findMany({
+      where: { vehicle_id: vehicleId },
+      select: { id: true },
+    });
+    const gpsDeviceIds = gpsDevices.map((d) => d.id);
+
+    // 2. Find all DeviceRepairReplacement(s) for these GPSDevice(s)
+    const deviceRepairs = await tx.deviceRepairReplacement.findMany({
+      where: { original_gps_id: { in: gpsDeviceIds } },
+      select: { id: true },
+    });
+    const deviceRepairIds = deviceRepairs.map((d) => d.id);
+
+    // 3. Delete related InstallImage, InstallationEngineer, ComponentReplacement for DeviceRepairReplacement
+    await tx.installImage.deleteMany({
+      where: { device_repair_replacement_id: { in: deviceRepairIds } },
+    });
+    await tx.installationEngineer.deleteMany({
+      where: { device_repair_replacement_id: { in: deviceRepairIds } },
+    });
+    await tx.componentReplacement.deleteMany({
+      where: { device_replacement_id: { in: deviceRepairIds } },
+    });
+
+    // 4. Delete DeviceRepairReplacement
+    await tx.deviceRepairReplacement.deleteMany({
+      where: { id: { in: deviceRepairIds } },
+    });
+
+    // 5. For each GPSDevice, delete related models
+    // SimCard (and related ComponentReplacement)
+    const simCards = await tx.simCard.findMany({
+      where: { device_id: { in: gpsDeviceIds } },
+      select: { id: true },
+    });
+    const simCardIds = simCards.map((s) => s.id);
+    await tx.componentReplacement.deleteMany({
+      where: {
+        OR: [
+          { original_simcard_id: { in: simCardIds } },
+          { replacement_simcard_id: { in: simCardIds } },
+        ],
+      },
+    });
+    await tx.simCard.deleteMany({ where: { id: { in: simCardIds } } });
+
+    // Peripheral (and PeripheralDetail, ComponentReplacement)
+    const peripherals = await tx.peripheral.findMany({
+      where: { device_id: { in: gpsDeviceIds } },
+      select: { id: true },
+    });
+    const peripheralIds = peripherals.map((p) => p.id);
+    await tx.peripheralDetail.deleteMany({
+      where: { peripheral_id: { in: peripheralIds } },
+    });
+    await tx.componentReplacement.deleteMany({
+      where: {
+        OR: [
+          { original_peripheral_id: { in: peripheralIds } },
+          { replacement_peripheral_id: { in: peripheralIds } },
+        ],
+      },
+    });
+    await tx.peripheral.deleteMany({ where: { id: { in: peripheralIds } } });
+
+    // Accessory (and ComponentReplacement)
+    const accessories = await tx.accessory.findMany({
+      where: { device_id: { in: gpsDeviceIds } },
+      select: { id: true },
+    });
+    const accessoryIds = accessories.map((a) => a.id);
+    await tx.componentReplacement.deleteMany({
+      where: {
+        OR: [
+          { original_accessory_id: { in: accessoryIds } },
+          { replacement_accessory_id: { in: accessoryIds } },
+        ],
+      },
+    });
+    await tx.accessory.deleteMany({ where: { id: { in: accessoryIds } } });
+
+    // Server (and ServerActivity, InstallImage, InstallationEngineer, ExtraServer)
+    const servers = await tx.server.findMany({
+      where: { gps_device_id: { in: gpsDeviceIds } },
+      select: { id: true },
+    });
+    const serverIds = servers.map((s) => s.id);
+    await tx.serverActivity.deleteMany({
+      where: { server_id: { in: serverIds } },
+    });
+    await tx.installImage.deleteMany({
+      where: { server_id: { in: serverIds } },
+    });
+    await tx.installationEngineer.deleteMany({
+      where: { server_id: { in: serverIds } },
+    });
+    await tx.extraServer.deleteMany({
+      where: { server_id: { in: serverIds } },
+    });
+    await tx.server.deleteMany({ where: { id: { in: serverIds } } });
+
+    // ExtraGPSDevice
+    await tx.extraGPSDevice.deleteMany({
+      where: { device_id: { in: gpsDeviceIds } },
+    });
+
+    // 6. Delete GPSDevice(s)
+    await tx.gPSDevice.deleteMany({ where: { id: { in: gpsDeviceIds } } });
+
+    // 7. Delete Vehicle
+    await tx.vehicle.delete({ where: { id: vehicleId } });
+
+    return { success: true };
+  });
+};

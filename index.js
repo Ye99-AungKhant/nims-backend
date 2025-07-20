@@ -22,6 +22,7 @@ import { permissionRouter } from "./routers/permission.js";
 import { dashboardRouter } from "./routers/dashboard.js";
 import { installImageRouter } from "./routers/installImage.js";
 import { repairReplacementRouter } from "./routers/repairReplacement.js";
+import { reportRouter } from "./routers/report.js";
 
 const app = express();
 const apiRouter = express.Router();
@@ -58,6 +59,7 @@ apiRouter.use("/server", installServerRouter);
 apiRouter.use("/permission", permissionRouter);
 apiRouter.use("/installImage", installImageRouter);
 apiRouter.use("/repair-replacement", repairReplacementRouter);
+apiRouter.use("/report", reportRouter);
 
 app.use("/api", apiRouter);
 

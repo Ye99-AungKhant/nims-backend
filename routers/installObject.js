@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createInstallObject,
+  deleteInstallObject,
   getInstalled,
   updateInstallObject,
   updateInstallObjectStatus,
@@ -17,5 +18,6 @@ router.post(
 );
 router.get("/", getInstalled);
 router.get("/check-expiry", updateInstallObjectStatus);
+router.delete("/:id", deleteInstallObject);
 
 export { router as installObjectRouter };

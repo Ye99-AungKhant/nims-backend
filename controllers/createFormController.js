@@ -15,6 +15,7 @@ import {
   updateInstallationEngineerService,
 } from "../models/installationEngineerModel.js";
 import {
+  deleteInstallObjectService,
   getInstalledObjectService,
   updateInstallObjectStatusService,
 } from "../models/installObjectModel.js";
@@ -433,5 +434,16 @@ export const updateInstallObjectStatus = async (req, res) => {
     console.log(error);
 
     apiResponse(res, 400, "Installed objects status updated failed", error);
+  }
+};
+
+export const deleteInstallObject = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await deleteInstallObjectService({ vehicleId: Number(id) });
+    apiResponse(res, 200, "Installed object deleted successfully.");
+  } catch (error) {
+    apiResponse(res, 400, "Failed to delete installed object.", error);
   }
 };
