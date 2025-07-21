@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import bcrypt from "bcrypt";
 
 export const loginService = async (username, password) => {
   const user = await prisma.user.findFirst({
@@ -6,8 +7,10 @@ export const loginService = async (username, password) => {
     include: { role: { include: { permissions: true } } },
   });
 
-  //   const passwordMatch = await bcrypt.compare(password, user.password);
-  if (user.password !== password) return null;
+  if (!user) return null;
+
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!passwordMatch) return null;
 
   return user;
 };

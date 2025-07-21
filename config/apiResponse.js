@@ -1,5 +1,6 @@
 export const apiResponse = (res, status, message, data = null) => {
-  res.status(status).json({
+  if (res.headersSent) return;
+  return res.status(status).json({
     status,
     message,
     data,

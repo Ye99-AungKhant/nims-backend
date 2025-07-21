@@ -55,25 +55,7 @@ export const getInstalledObjectService = async (
         // Combine both conditions in a single .some with AND array
         const year = new Date(fromDate).getFullYear();
         whereCondition.device.some.server.some = {
-          AND: [
-            { renewal_date: dateFilter },
-            {
-              OR: [
-                {
-                  installed_date: {
-                    gte: new Date(`${year}-01-01T00:00:00.000Z`),
-                    lte: new Date(`${year}-12-31T23:59:59.999Z`),
-                  },
-                },
-                {
-                  expire_date: {
-                    gte: new Date(`${year}-01-01T00:00:00.000Z`),
-                    lte: new Date(`${year}-12-31T23:59:59.999Z`),
-                  },
-                },
-              ],
-            },
-          ],
+          renewal_date: dateFilter,
         };
       } else if (filter_by_date === "repair_date") {
         // Filter by repair date in DeviceRepairReplacement

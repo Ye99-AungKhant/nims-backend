@@ -410,9 +410,9 @@ export const getInstalled = async (req, res) => {
       toDate,
       client_id
     );
-    apiResponse(res, 200, "", installedObjects);
+    return apiResponse(res, 200, "", installedObjects);
   } catch (error) {
-    apiResponse(
+    return apiResponse(
       res,
       400,
       "Failed to load installed objects due to a network issue. Please try again.",

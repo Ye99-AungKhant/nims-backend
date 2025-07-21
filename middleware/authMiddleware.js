@@ -6,7 +6,7 @@ export const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    apiResponse(res, 401, "No token provided");
+    return apiResponse(res, 401, "No token provided");
   }
 
   jwt.verify(
@@ -15,7 +15,7 @@ export const authenticateToken = (req, res, next) => {
     (err, user) => {
       if (err) {
         // If token is expired or invalid, block access
-        apiResponse(res, 401, "Token expired or invalid");
+        return apiResponse(res, 401, "Token expired or invalid");
       }
       req.user = user;
       next();

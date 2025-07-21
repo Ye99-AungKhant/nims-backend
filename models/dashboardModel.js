@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import prisma from "./../config/prisma.js";
+import logger from "../util/logger.js";
 
 dayjs.extend(utc);
 
@@ -40,9 +41,16 @@ export const getDashboardDataService = async (filterYear) => {
             lte: endDate,
           },
         },
+        {
+          renewal_date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
       ],
     },
     select: {
+      id: true,
       installed_date: true,
       expire_date: true,
       renewal_date: true,
@@ -51,6 +59,7 @@ export const getDashboardDataService = async (filterYear) => {
       //   select: { renewal_date: true },
       // },
     },
+    orderBy: { id: "asc" },
   });
 
   // Fetch repair and replacement data
@@ -69,7 +78,6 @@ export const getDashboardDataService = async (filterYear) => {
   });
 
   const monthlyStats = {};
-  //   console.log(servers);
 
   for (const server of servers) {
     const installMonth = dayjs(server.installed_date).utc().format("MMM YYYY");
