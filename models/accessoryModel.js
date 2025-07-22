@@ -29,3 +29,85 @@ export const updateAccessoryService = async (
   });
   return accessory;
 };
+
+export const accessoryReportService = async (
+  prisma,
+  { type_id, search = "", currentPage, perPage }
+) => {
+  // Build where clause for filtering
+  const where = {
+    AND: [
+      type ? { type_id: type_id } : {},
+      search
+        ? {
+            OR: [
+              { id: { equals: Number(search) || undefined } },
+              { device: { imei: { contains: search, mode: "insensitive" } } },
+              {
+                device: {
+                  vehicle: {
+                    plate_number: { contains: search, mode: "insensitive" },
+                  },
+                },
+              },
+              {
+                device: {
+                  vehicle: {
+                    client: { name: { contains: search, mode: "insensitive" } },
+                  },
+                },
+              },
+            ],
+          }
+        : {},
+    ],
+  };
+
+  // Count total matching records (for pagination)
+  const totalCount = await prisma.accessory.count({ where });
+  const totalPages = Math.ceil(totalCount / perPage);
+
+  // Query paginated data with relations
+  const accessories = await prisma.accessory.findMany({
+    where,
+    include: {
+      device: {
+        include: {
+          vehicle: {
+            include: {
+              client: true,
+            },
+          },
+        },
+      },
+      type: true,
+    },
+    orderBy: { id: "desc" },
+    skip: (currentPage - 1) * perPage,
+    take: perPage,
+  });
+
+  // Map the result to show accessory, device, and vehicle info
+  const data = accessories.map((acc) => ({
+    accessory_id: acc.id,
+    type: acc.type?.name,
+    qty: acc.qty,
+    installed_date: acc.installed_date,
+    device_id: acc.device?.id,
+    device_imei: acc.device?.imei,
+    vehicle_id: acc.device?.vehicle?.id,
+    vehicle_plate_number: acc.device?.vehicle?.plate_number,
+    client: {
+      id: acc.device?.vehicle?.client?.id,
+      name: acc.device?.vehicle?.client?.name,
+    },
+  }));
+
+  return {
+    data,
+    totalCount,
+    totalPages,
+    currentPage,
+    perPage,
+  };
+};

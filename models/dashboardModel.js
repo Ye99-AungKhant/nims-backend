@@ -54,10 +54,10 @@ export const getDashboardDataService = async (filterYear) => {
       installed_date: true,
       expire_date: true,
       renewal_date: true,
-      // server_activity: {
-      //   where: { renewal_date: { not: null } },
-      //   select: { renewal_date: true },
-      // },
+      server_activity: {
+        where: { renewal_date: { not: null } },
+        select: { renewal_date: true },
+      },
     },
     orderBy: { id: "asc" },
   });
@@ -108,8 +108,7 @@ export const getDashboardDataService = async (filterYear) => {
       monthlyStats[expireMonth].Expired++;
     }
 
-    // Count renewals
-    // for (const activity of server.server_activity) {
+    // Count current renewal
     if (dayjs(server.renewal_date).year() === year) {
       monthlyStats[renewalMonth] ??= {
         Installed: 0,
@@ -120,7 +119,25 @@ export const getDashboardDataService = async (filterYear) => {
       };
       monthlyStats[renewalMonth].Renewal++;
     }
-    // }
+
+    // Count all changing activity renewal dates
+    if (Array.isArray(server.server_activity)) {
+      for (const activity of server.server_activity) {
+        if (dayjs(activity.renewal_date).year() === year) {
+          const activityRenewalMonth = dayjs(activity.renewal_date)
+            .utc()
+            .format("MMM YYYY");
+          monthlyStats[activityRenewalMonth] ??= {
+            Installed: 0,
+            Expired: 0,
+            Renewal: 0,
+            Repair: 0,
+            Replacement: 0,
+          };
+          monthlyStats[activityRenewalMonth].Renewal++;
+        }
+      }
+    }
   }
 
   // Add repair and replacement stats

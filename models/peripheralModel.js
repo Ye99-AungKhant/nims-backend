@@ -64,3 +64,105 @@ export const updatePeripheralService = async (
 
   return;
 };
+
+export const peripheralReportService = async (
+  prisma,
+  { filterType, filterId, search = "", currentPage, perPage }
+) => {
+  let where = {};
+  let include = {
+    device: {
+      include: {
+        vehicle: {
+          include: {
+            client: true,
+          },
+        },
+      },
+    },
+    type: true,
+    peripheralDetail: true,
+  };
+
+  if (filterType === "type" && filterId) {
+    where.sensor_type_id = Number(filterId);
+  }
+
+  // For brand/model, filter through PeripheralDetail
+  if ((filterType === "brand" || filterType === "model") && filterId) {
+    where.peripheralDetail = {
+      some: {
+        ...(filterType === "brand" ? { brand_id: Number(filterId) } : {}),
+        ...(filterType === "model" ? { model_id: Number(filterId) } : {}),
+      },
+    };
+  }
+
+  if (search) {
+    where = {
+      ...where,
+      OR: [
+        { id: { equals: Number(search) || undefined } },
+        { device: { imei: { contains: search, mode: "insensitive" } } },
+        {
+          device: {
+            vehicle: {
+              plate_number: { contains: search, mode: "insensitive" },
+            },
+          },
+        },
+        {
+          device: {
+            vehicle: {
+              client: { name: { contains: search, mode: "insensitive" } },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  // Count total matching records (for pagination)
+  const totalCount = await prisma.peripheral.count({ where });
+  const totalPages = Math.ceil(totalCount / perPage);
+
+  // Query paginated data with relations
+  const peripherals = await prisma.peripheral.findMany({
+    where,
+    include,
+    orderBy: { id: "desc" },
+    skip: (currentPage - 1) * perPage,
+    take: perPage,
+  });
+
+  // Map the result to show peripheral, type/brand/model, and device/vehicle info
+  const data = peripherals.map((per) => ({
+    peripheral_id: per.id,
+    type: per.type ? { id: per.type.id, name: per.type.name } : null,
+    qty: per.qty,
+    installed_date: per.installed_date,
+    device_id: per.device?.id,
+    device_imei: per.device?.imei,
+    vehicle_id: per.device?.vehicle?.id,
+    vehicle_plate_number: per.device?.vehicle?.plate_number,
+    client: {
+      id: per.device?.vehicle?.client?.id,
+      name: per.device?.vehicle?.client?.name,
+    },
+    peripheralDetails: per.peripheralDetail.map((detail) => ({
+      id: detail.id,
+      brand_id: detail.brand_id,
+      model_id: detail.model_id,
+      serial_no: detail.serial_no,
+      warranty_plan_id: detail.warranty_plan_id,
+    })),
+  }));
+
+  return {
+    data,
+    totalCount,
+    totalPages,
+    currentPage,
+    perPage,
+  };
+};
