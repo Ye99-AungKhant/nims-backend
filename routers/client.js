@@ -9,6 +9,7 @@ import {
   getClientWithContact,
   updateClientWithContact,
 } from "../controllers/clientController.js";
+import { exportInstalledObjectsXlsx } from "../controllers/exportController.js";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.get("/contact-person", getClientWithContact);
 router.get("/object", getClientObjects);
 router.post("/update", updateClientWithContact);
 router.delete("/delete/:id", deleteClientWithContact);
+router.get("/export-installed-object", exportInstalledObjectsXlsx);
 
 export { router as clientRouter };
