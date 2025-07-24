@@ -25,16 +25,15 @@ export const getBrandService = async ({ type_id, type_group }) => {
     type_id: typeId,
   };
 
-  if(type_id){
-  type = await prisma.type.findFirst({
+  if (type_id) {
+    type = await prisma.type.findFirst({
       where: { id: type_id },
-    })
+    });
   }
-  
 
-  if(type_group == "Server" && type?.name == "Dual"){
-      const brands = await prisma.brand.findMany({
-      where: {type_group},
+  if (type_group == "Server" && type?.name == "Dual") {
+    const brands = await prisma.brand.findMany({
+      where: { type_group },
       include: { type: true },
     });
 
@@ -47,6 +46,12 @@ export const getBrandService = async ({ type_id, type_group }) => {
   });
 
   return brands;
+};
+
+export const getAllBrandService = async ({ type_group }) => {
+  return await prisma.brand.findMany({
+    where: { type_group },
+  });
 };
 
 export const updateBrandService = async ({ id, type_id, name }) => {

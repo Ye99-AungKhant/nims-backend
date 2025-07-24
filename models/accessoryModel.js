@@ -37,11 +37,11 @@ export const accessoryReportService = async (
   // Build where clause for filtering
   const where = {
     AND: [
-      type ? { type_id: type_id } : {},
+      type_id ? { type_id: type_id } : {},
       search
         ? {
             OR: [
-              { id: { equals: Number(search) || undefined } },
+              { type: { name: { contains: search, mode: "insensitive" } } },
               { device: { imei: { contains: search, mode: "insensitive" } } },
               {
                 device: {

@@ -67,7 +67,7 @@ export const updatePeripheralService = async (
 
 export const peripheralReportService = async (
   prisma,
-  { filterType, filterId, search = "", currentPage, perPage }
+  { filterType, filterId, search = "", client_id, currentPage, perPage }
 ) => {
   let where = {};
   let include = {
@@ -81,7 +81,13 @@ export const peripheralReportService = async (
       },
     },
     type: true,
-    peripheralDetail: true,
+    peripheralDetail: {
+      include: {
+        brand: true,
+        model: true,
+        warranty_plan: true,
+      },
+    },
   };
 
   if (filterType === "type" && filterId) {
@@ -98,23 +104,28 @@ export const peripheralReportService = async (
     };
   }
 
+  if (client_id) {
+    where = {
+      ...where,
+      device: {
+        vehicle: {
+          ...(where.vehicle || {}),
+          client_id: Number(client_id),
+        },
+      },
+    };
+  }
+
   if (search) {
     where = {
       ...where,
       OR: [
-        { id: { equals: Number(search) || undefined } },
         { device: { imei: { contains: search, mode: "insensitive" } } },
+        { device: { serial_no: { contains: search, mode: "insensitive" } } },
         {
           device: {
             vehicle: {
               plate_number: { contains: search, mode: "insensitive" },
-            },
-          },
-        },
-        {
-          device: {
-            vehicle: {
-              client: { name: { contains: search, mode: "insensitive" } },
             },
           },
         },
@@ -143,6 +154,7 @@ export const peripheralReportService = async (
     installed_date: per.installed_date,
     device_id: per.device?.id,
     device_imei: per.device?.imei,
+    device_serial_no: per.device?.serial_no,
     vehicle_id: per.device?.vehicle?.id,
     vehicle_plate_number: per.device?.vehicle?.plate_number,
     client: {
@@ -151,10 +163,10 @@ export const peripheralReportService = async (
     },
     peripheralDetails: per.peripheralDetail.map((detail) => ({
       id: detail.id,
-      brand_id: detail.brand_id,
-      model_id: detail.model_id,
+      brand: detail.brand,
+      model: detail.model,
       serial_no: detail.serial_no,
-      warranty_plan_id: detail.warranty_plan_id,
+      warranty_plan: detail.warranty_plan,
     })),
   }));
 

@@ -2,6 +2,7 @@ import { apiResponse } from "../config/apiResponse.js";
 import {
   createBrandService,
   deleteBrandService,
+  getAllBrandService,
   getBrandService,
   updateBrandService,
 } from "../models/brandModel.js";
@@ -22,6 +23,19 @@ export const getBrand = async (req, res) => {
   try {
     const brands = await getBrandService({
       type_id: Number(type_id),
+      type_group,
+    });
+    apiResponse(res, 200, "", brands);
+  } catch (error) {
+    apiResponse(res, 400, "Brand not found.", error);
+  }
+};
+
+export const getAllBrand = async (req, res) => {
+  const { type_group } = req.query;
+
+  try {
+    const brands = await getAllBrandService({
       type_group,
     });
     apiResponse(res, 200, "", brands);

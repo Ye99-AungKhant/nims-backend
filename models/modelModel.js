@@ -23,6 +23,12 @@ export const getModelService = async (type_group, brand_id) => {
   return models;
 };
 
+export const getAllModelService = async (type_group) => {
+  return await prisma.model.findMany({
+    where: { type_group },
+  });
+};
+
 export const updateModelService = async ({ id, brand_id, name }) => {
   const model = await prisma.model.update({
     where: { id },

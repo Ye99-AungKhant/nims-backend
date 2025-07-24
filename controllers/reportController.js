@@ -45,13 +45,15 @@ export const accessoryReport = async (req, res) => {
 };
 
 export const gpsDeviceReport = async (req, res) => {
-  const { filterType, filterId, pageIndex, pageSize, search } = req.query;
+  const { filterType, filterId, pageIndex, pageSize, client_id, search } =
+    req.query;
   try {
     const currentPage = Math.max(Number(pageIndex) || 1, 1);
     const perPage = Number(pageSize) || 10;
     const report = await gpsDeviceReportService(prisma, {
       filterType,
       filterId,
+      client_id,
       search,
       currentPage,
       perPage,
@@ -65,13 +67,15 @@ export const gpsDeviceReport = async (req, res) => {
 };
 
 export const peripheralReport = async (req, res) => {
-  const { filterType, filterId, pageIndex, pageSize, search } = req.query;
+  const { filterType, filterId, pageIndex, pageSize, client_id, search } =
+    req.query;
   try {
     const currentPage = Math.max(Number(pageIndex) || 1, 1);
     const perPage = Number(pageSize) || 10;
     const report = await peripheralReportService(prisma, {
       filterType,
       filterId,
+      client_id,
       search,
       currentPage,
       perPage,

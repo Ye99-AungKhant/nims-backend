@@ -53,7 +53,7 @@ export const createExtraGPSDeviceService = async (
 
 export const gpsDeviceReportService = async (
   prisma,
-  { filterType, filterId, search = "", currentPage, perPage }
+  { filterType, filterId, client_id, search = "", currentPage, perPage }
 ) => {
   // Build where clause for filtering
   let where = {};
@@ -62,7 +62,18 @@ export const gpsDeviceReportService = async (
   } else if (filterType === "model" && filterId) {
     where.model_id = Number(filterId);
   }
+  // Add filter by client_id if provided
+  if (client_id) {
+    where = {
+      ...where,
+      vehicle: {
+        ...(where.vehicle || {}),
+        client_id: Number(client_id),
+      },
+    };
+  }
   if (search) {
+    // If client_id is also present, merge vehicle filter
     where = {
       ...where,
       OR: [
@@ -71,11 +82,6 @@ export const gpsDeviceReportService = async (
         {
           vehicle: {
             plate_number: { contains: search, mode: "insensitive" },
-          },
-        },
-        {
-          vehicle: {
-            client: { name: { contains: search, mode: "insensitive" } },
           },
         },
       ],

@@ -2,6 +2,7 @@ import { apiResponse } from "../config/apiResponse.js";
 import {
   createModelService,
   deleteModelService,
+  getAllModelService,
   getModelService,
   updateModelService,
 } from "../models/modelModel.js";
@@ -16,6 +17,16 @@ export const getModel = async (req, res) => {
   const { type_group, brand_id } = req.query;
   try {
     const models = await getModelService(type_group, brand_id);
+    apiResponse(res, 200, "", models);
+  } catch (error) {
+    apiResponse(res, 400, "model not found", error);
+  }
+};
+
+export const getAllModel = async (req, res) => {
+  const { type_group } = req.query;
+  try {
+    const models = await getAllModelService(type_group);
     apiResponse(res, 200, "", models);
   } catch (error) {
     apiResponse(res, 400, "model not found", error);
