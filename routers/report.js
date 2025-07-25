@@ -3,6 +3,7 @@ import {
   accessoryReport,
   gpsDeviceReport,
   peripheralReport,
+  serverReport,
   simcardReport,
 } from "../controllers/reportController.js";
 
@@ -12,5 +13,6 @@ router.get("/simcard", simcardReport);
 router.get("/accessory", accessoryReport);
 router.get("/gps-device", gpsDeviceReport);
 router.get("/peripheral", peripheralReport);
+router.get("/server", serverReport);
 
 export { router as reportRouter };

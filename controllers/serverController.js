@@ -4,6 +4,7 @@ import {
   createServerService,
   renewalServerService,
 } from "../models/serverModel.js";
+import AuditLogService from "../models/auditLogModel.js";
 
 export const createServer = async (req, res) => {
   const {
@@ -26,6 +27,18 @@ export const createServer = async (req, res) => {
     object_base_fee,
     gps_device_id
   );
+  // Audit log integration
+  try {
+    await AuditLogService.create({
+      user_id: req.user?.id || null,
+      action: "CREATE",
+      table_name: "Server",
+      record_id: server?.id || null,
+      ip_address: req.ip || null,
+    });
+  } catch (auditError) {
+    console.error(`Audit log error: ${auditError?.stack || auditError}`);
+  }
   apiResponse(res, 201, "Server created successfully", server);
 };
 
@@ -55,6 +68,18 @@ export const renewalServer = async (req, res) => {
       extra_server_id,
     });
 
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "RENEWAL",
+        table_name: "Server",
+        record_id: id,
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      console.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Server was successfully renewed.");
   } catch (error) {
     console.log(error);

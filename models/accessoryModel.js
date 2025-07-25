@@ -32,28 +32,29 @@ export const updateAccessoryService = async (
 
 export const accessoryReportService = async (
   prisma,
-  { type_id, search = "", currentPage, perPage }
+  { type_id, search = "", currentPage, perPage, client_id }
 ) => {
   // Build where clause for filtering
   const where = {
     AND: [
       type_id ? { type_id: type_id } : {},
+      client_id
+        ? {
+            device: {
+              vehicle: {
+                client_id: Number(client_id),
+              },
+            },
+          }
+        : {},
       search
         ? {
             OR: [
-              { type: { name: { contains: search, mode: "insensitive" } } },
               { device: { imei: { contains: search, mode: "insensitive" } } },
               {
                 device: {
                   vehicle: {
                     plate_number: { contains: search, mode: "insensitive" },
-                  },
-                },
-              },
-              {
-                device: {
-                  vehicle: {
-                    client: { name: { contains: search, mode: "insensitive" } },
                   },
                 },
               },

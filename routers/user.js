@@ -2,6 +2,7 @@ import express from "express";
 import prisma from "../config/prisma.js";
 import {
   createInstallEngineer,
+  createUser,
   deleteUser,
   getInstallEngineer,
   getUser,
@@ -12,18 +13,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
-  const { name, role_id, phone, email } = req.body;
-  const user = await prisma.user.create({
-    data: {
-      name,
-      role_id,
-      phone,
-      email,
-    },
-  });
-  res.json(user);
-});
+router.post("/", createUser);
 
 router.get("/", getUser);
 

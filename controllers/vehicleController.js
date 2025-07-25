@@ -2,12 +2,15 @@ import { apiResponse } from "../config/apiResponse.js";
 import prisma from "../config/prisma.js";
 import { createInstallImageService } from "../models/fileModel.js";
 import { createInstallationEngineerService } from "../models/installationEngineerModel.js";
+
 import {
   createVehicleService,
   getVehicleActivityService,
   getVehicleService,
   vehicleChangeService,
 } from "../models/vehicleModel.js";
+import AuditLogService from "../models/auditLogModel.js";
+import logger from "../util/logger.js";
 
 export const createVehicle = async (req, res) => {
   const { client_id, plate_number, type_id, brand_id, model_id, year } =
@@ -30,8 +33,6 @@ export const getVehicle = async (req, res) => {
 };
 
 export const vehicleChange = async (req, res) => {
-  console.log(req.files);
-
   const bodyData = JSON.parse(req.body.data);
   const files = req.files;
   const serverId = bodyData.serverId;
@@ -89,10 +90,21 @@ export const vehicleChange = async (req, res) => {
         await createInstallImageService(prisma, imageRecords);
       }
     });
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CHANGE",
+        table_name: "Vehicle",
+        record_id: buildVehicleData.vehicle_id || null,
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Vehicle updated successfully");
   } catch (error) {
-    console.log(error);
-
+    logger.error(`Vehicle change error: ${error?.stack || error}`);
     apiResponse(res, 400, "Vehicle update failed.", error);
   }
 };

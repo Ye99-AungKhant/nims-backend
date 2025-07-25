@@ -21,6 +21,7 @@ model User {
     role                  Role?                     @relation(fields: [role_id], references: [id])
     installation_engineer InstallationEngineer[]
     device_replacements   DeviceRepairReplacement[]
+    audit_logs            AuditLog[]
 }
 
 model Client {
@@ -438,4 +439,17 @@ enum RepairReplacementType {
     Repair
     Replacement
     VehicleChange
+}
+
+model AuditLog {
+    id         Int      @id @default(autoincrement())
+    user_id    Int?
+    action     String
+    table_name String
+    record_id  Int?
+    ip_address String?
+    description String?
+    timestamp  DateTime @default(now())
+
+    user       User?    @relation(fields: [user_id], references: [id])
 }

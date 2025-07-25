@@ -1,3 +1,4 @@
+import { serverReportService } from "../models/serverModel.js";
 import { peripheralReportService } from "../models/peripheralModel.js";
 import { gpsDeviceReportService } from "../models/gpsDeviceModel.js";
 import { accessoryReportService } from "../models/accessoryModel.js";
@@ -6,7 +7,7 @@ import prisma from "../config/prisma.js";
 import { simcardReportService } from "../models/simCardModel.js";
 
 export const simcardReport = async (req, res) => {
-  const { operator, pageIndex, pageSize, search } = req.query;
+  const { operator, pageIndex, pageSize, search, client_id } = req.query;
   try {
     const currentPage = Math.max(Number(pageIndex) || 1, 1);
     const perPage = Number(pageSize) || 10;
@@ -15,6 +16,7 @@ export const simcardReport = async (req, res) => {
       search,
       currentPage,
       perPage,
+      client_id,
     });
 
     apiResponse(res, 200, "Simcard report generated successfully", report);
@@ -26,7 +28,7 @@ export const simcardReport = async (req, res) => {
 };
 
 export const accessoryReport = async (req, res) => {
-  const { type_id, pageIndex, pageSize, search } = req.query;
+  const { type_id, pageIndex, pageSize, search, client_id } = req.query;
   try {
     const currentPage = Math.max(Number(pageIndex) || 1, 1);
     const perPage = Number(pageSize) || 10;
@@ -35,6 +37,7 @@ export const accessoryReport = async (req, res) => {
       search,
       currentPage,
       perPage,
+      client_id,
     });
 
     apiResponse(res, 200, "Accessory report generated successfully", report);
@@ -85,5 +88,35 @@ export const peripheralReport = async (req, res) => {
   } catch (error) {
     console.log(error);
     apiResponse(res, 500, "Error generating Peripheral report", error);
+  }
+};
+
+export const serverReport = async (req, res) => {
+  const {
+    filterType,
+    filterId,
+    pageIndex,
+    pageSize,
+    client_id,
+    filter_by,
+    search,
+  } = req.query;
+  try {
+    const currentPage = Math.max(Number(pageIndex) || 1, 1);
+    const perPage = Number(pageSize) || 10;
+    const report = await serverReportService(prisma, {
+      filterType,
+      filterId,
+      client_id,
+      filter_by,
+      search,
+      currentPage,
+      perPage,
+    });
+
+    apiResponse(res, 200, "Server report generated successfully", report);
+  } catch (error) {
+    console.log(error);
+    apiResponse(res, 500, "Error generating Server report", error);
   }
 };

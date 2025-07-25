@@ -20,6 +20,7 @@ import {
 } from "../models/repairReplacementModel.js";
 import { createSimCardService } from "../models/simCardModel.js";
 import logger from "../util/logger.js";
+import AuditLogService from "../models/auditLogModel.js";
 
 export const createPlacement = async (req, res) => {
   const bodyData = JSON.parse(req.body.data);
@@ -410,6 +411,19 @@ export const createPlacement = async (req, res) => {
         }
       }
     });
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: null, // You can set to deviceReplacement?.id if needed
+        ip_address: req.ip || null,
+        description: "Device replacement",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 201, "Object replaced successfully.");
   } catch (error) {
     logger.error(`Replacement Error: ${error?.stack || error}`);
@@ -468,6 +482,19 @@ export const createRepair = async (req, res) => {
 
       await createInstallImageService(prisma, imageRecords);
     }
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: null, // You can set to deviceRepair?.id if needed
+        ip_address: req.ip || null,
+        description: "Device repair",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 201, "Device repaired successfully.");
   } catch (error) {
     logger.error(`Repair Error: ${error?.stack || error}`);
@@ -502,6 +529,19 @@ export const updateGPSReplacement = async (req, res) => {
   try {
     const bodyData = req.body;
     await updateGPSReplacementService(prisma, bodyData);
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: bodyData?.id || null,
+        ip_address: req.ip || null,
+        description: "Replaced GPS device",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "GPS replacement updated successfully.");
   } catch (error) {
     logger.error(`UpdateGPSReplacement Error: ${error?.stack || error}`);
@@ -533,6 +573,19 @@ export const updateSIMCardReplacement = async (req, res) => {
   try {
     const bodyData = req.body;
     await updateSIMCardReplacementService(prisma, bodyData);
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: bodyData?.id || null,
+        ip_address: req.ip || null,
+        description: "Replaced SIM card",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "SIM card replacement updated successfully.");
   } catch (error) {
     logger.error(`UpdateSIMCardReplacement Error: ${error?.stack || error}`);
@@ -565,6 +618,19 @@ export const updatePeripheralReplacement = async (req, res) => {
   try {
     const bodyData = req.body;
     await updatePeripheralReplacementService(prisma, bodyData);
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: bodyData?.id || null,
+        ip_address: req.ip || null,
+        description: "Replaced Peripheral",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Peripheral replacement updated successfully.");
   } catch (error) {
     logger.error(`UpdatePeripheralReplacement Error: ${error?.stack || error}`);
@@ -596,6 +662,19 @@ export const updateAccessoryReplacement = async (req, res) => {
   try {
     const bodyData = req.body;
     await updateAccessoryReplacementService(prisma, bodyData);
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "DeviceRepairReplacement",
+        record_id: bodyData?.id || null,
+        ip_address: req.ip || null,
+        description: "Replaced Accessory",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Accessory replacement updated successfully.");
   } catch (error) {
     logger.error(`UpdateAccessoryReplacement Error: ${error?.stack || error}`);
@@ -627,6 +706,19 @@ export const deleteReplacement = async (req, res) => {
   try {
     const { id } = req.body;
     await deleteRplacementService(prisma, id);
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "DELETE",
+        table_name: "DeviceRepairReplacement",
+        record_id: id,
+        ip_address: req.ip || null,
+        description: "Deleted Device Repair/Replacement",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Type delete Successful.");
   } catch (error) {
     logger.error(`DeleteReplacement Error: ${error?.stack || error}`);

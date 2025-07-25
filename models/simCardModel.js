@@ -30,12 +30,21 @@ export const updateSimCardService = async (
 
 export const simcardReportService = async (
   prisma,
-  { operator, search = "", currentPage, perPage }
+  { operator, search = "", currentPage, perPage, client_id }
 ) => {
   // Build where clause for filtering
   const where = {
     AND: [
       operator ? { operator } : {},
+      client_id
+        ? {
+            device: {
+              vehicle: {
+                client_id: Number(client_id),
+              },
+            },
+          }
+        : {},
       search
         ? {
             OR: [
@@ -45,13 +54,6 @@ export const simcardReportService = async (
                 device: {
                   vehicle: {
                     plate_number: { contains: search, mode: "insensitive" },
-                  },
-                },
-              },
-              {
-                device: {
-                  vehicle: {
-                    client: { name: { contains: search, mode: "insensitive" } },
                   },
                 },
               },

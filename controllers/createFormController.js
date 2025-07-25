@@ -34,6 +34,7 @@ import {
 } from "../models/simCardModel.js";
 import { createVehicleService } from "../models/vehicleModel.js";
 import logger from "../util/logger.js";
+import AuditLogService from "../models/auditLogModel.js";
 
 const now = new Date();
 const currentYear = now.getFullYear();
@@ -181,6 +182,18 @@ export const createInstallObject = async (req, res) => {
           await createInstallImageService(prisma, imageRecords);
         }
       });
+      // Audit log integration
+      try {
+        await AuditLogService.create({
+          user_id: req.user?.id || null,
+          action: "CREATE",
+          table_name: "InstallObject",
+          record_id: null, // You can set to vehicle.id or another relevant id if needed
+          ip_address: req.ip || null,
+        });
+      } catch (auditError) {
+        logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+      }
       apiResponse(res, 201, "Installation completed successfully.");
     } catch (error) {
       logger.error(`create new install Error: ${error?.stack || error}`);
@@ -367,6 +380,18 @@ export const updateInstallObject = async (req, res) => {
         }
       });
 
+      // Audit log integration
+      try {
+        await AuditLogService.create({
+          user_id: req.user?.id || null,
+          action: "UPDATE",
+          table_name: "InstallObject",
+          record_id: vehicle_id,
+          ip_address: req.ip || null,
+        });
+      } catch (auditError) {
+        logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+      }
       apiResponse(res, 200, "Installation completed successfully.");
     } catch (error) {
       logger.error(`update installed object Error: ${error?.stack || error}`);
@@ -442,6 +467,18 @@ export const deleteInstallObject = async (req, res) => {
 
   try {
     await deleteInstallObjectService({ vehicleId: Number(id) });
+    // Audit log integration
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "DELETE",
+        table_name: "InstallObject",
+        record_id: Number(id),
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
     apiResponse(res, 200, "Installed object deleted successfully.");
   } catch (error) {
     apiResponse(res, 400, "Failed to delete installed object.", error);

@@ -13,11 +13,23 @@ import {
   updateContactPersonService,
 } from "../models/contactPersonModel.js";
 import prisma from "../config/prisma.js";
+import logger from "../util/logger.js";
+import AuditLogService from "../models/auditLogModel.js";
 
 export const createClient = async (req, res) => {
-  const { name, address, city } = req.body;
-  console.log({ ...req.body });
   const client = await createClientService(req.body);
+
+  try {
+    await AuditLogService.create({
+      user_id: req.user?.id || null,
+      action: "CREATE",
+      table_name: "Client",
+      record_id: client?.id || null,
+      ip_address: req.ip || null,
+    });
+  } catch (auditError) {
+    logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+  }
   apiResponse(res, 201, "Client created successfully", client);
 };
 
@@ -38,6 +50,18 @@ export const createClientWithContact = async (req, res) => {
         })
       )
     );
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "Client",
+        record_id: client?.id || null,
+        ip_address: req.ip || null,
+        description: "Client with Contacts",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
 
     apiResponse(res, 201, "Client created successfully");
   } catch (error) {
@@ -64,6 +88,18 @@ export const updateClientWithContact = async (req, res) => {
       })
     )
   );
+  try {
+    await AuditLogService.create({
+      user_id: req.user?.id || null,
+      action: "UPDATE",
+      table_name: "Client",
+      record_id: client?.id || null,
+      ip_address: req.ip || null,
+      description: "Client with Contacts",
+    });
+  } catch (auditError) {
+    logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+  }
 
   apiResponse(res, 201, "Client updated successfully");
 };
@@ -101,9 +137,20 @@ export const getClientObjects = async (req, res) => {
 
 export const deleteClientWithContact = async (req, res) => {
   const { id } = req.params;
-  console.log("delete", id);
 
   await deleteContactPersonOfClientService(prisma, { id: Number(id) });
   await deleteClientService(Number(id));
-  apiResponse(res, 200, "Client deleted success");
+  try {
+    await AuditLogService.create({
+      user_id: req.user?.id || null,
+      action: "DELETE",
+      table_name: "Client",
+      record_id: client?.id || null,
+      ip_address: req.ip || null,
+      description: "Client with Contacts",
+    });
+  } catch (auditError) {
+    logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+  }
+  apiResponse(res, 200, "Client deleted successfully.");
 };

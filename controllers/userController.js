@@ -9,6 +9,37 @@ import {
   userCreateService,
   userUpdateBySuperAdminService,
 } from "../models/userModel.js";
+import logger from "../util/logger.js";
+import AuditLogService from "../models/auditLogModel.js";
+
+export const createUser = async (req, res) => {
+  const { name, role_id, phone, email } = req.body;
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name,
+        role_id,
+        phone,
+        email,
+      },
+    });
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+
+    apiResponse(res, 201, "User created successfully.", user);
+  } catch (error) {
+    apiResponse(res, 400, "User created failed.", error);
+  }
+};
 
 export const createInstallEngineer = async (req, res) => {
   const { name } = req.body;
@@ -18,7 +49,19 @@ export const createInstallEngineer = async (req, res) => {
     });
 
     const installEng = await userCreateService({ name, role_id: role.id });
-    apiResponse(res, 201, "Install engineer created successful.", installEng);
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+        description: "Installation Engineer",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+    apiResponse(res, 201, "Install engineer created successfully.", installEng);
   } catch (error) {
     apiResponse(res, 400, "Install engineer created failed.", error);
   }
@@ -54,7 +97,18 @@ export const updateUser = async (req, res) => {
   const { id, name } = req.body;
   try {
     const user = await updateUserService(id, name);
-    apiResponse(res, 200, "User updated successful.", user);
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+    apiResponse(res, 200, "User updated successfully.", user);
   } catch (error) {
     apiResponse(res, 400, "Users update failed.", error);
   }
@@ -64,7 +118,18 @@ export const deleteUser = async (req, res) => {
   const { id } = req.params;
   try {
     await deleteUserService({ id: Number(id) });
-    apiResponse(res, 200, "User deleted successful.");
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "DELETE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+    apiResponse(res, 200, "User deleted successfully.");
   } catch (error) {
     apiResponse(res, 400, "Users delete failed.", error);
   }
@@ -81,7 +146,21 @@ export const userCreateBySuperAdmin = async (req, res) => {
       password,
       username,
     });
-    apiResponse(res, 200, "User created successful.", user);
+
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "CREATE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+        description: "Authentication user by super admin",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+
+    apiResponse(res, 200, "User created successfully.", user);
   } catch (error) {
     apiResponse(res, 400, "Users created failed.", error);
   }
@@ -101,7 +180,21 @@ export const userUpdateBySuperAdmin = async (req, res) => {
       username,
       allow_login,
     });
-    apiResponse(res, 200, "User updated successful.", user);
+
+    try {
+      await AuditLogService.create({
+        user_id: req.user?.id || null,
+        action: "UPDATE",
+        table_name: "User",
+        record_id: user?.id || null,
+        ip_address: req.ip || null,
+        description: "Authentication user by super admin",
+      });
+    } catch (auditError) {
+      logger.error(`Audit log error: ${auditError?.stack || auditError}`);
+    }
+
+    apiResponse(res, 200, "User updated successfully.", user);
   } catch (error) {
     apiResponse(res, 400, "Users updated failed.", user);
   }
